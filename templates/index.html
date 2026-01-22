@@ -1,10 +1,11 @@
-cat > templates/index.html << 'ENDOFFILE'
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockPulse - Real-Time Market Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -237,6 +238,234 @@ cat > templates/index.html << 'ENDOFFILE'
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .modal-header h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .modal-header p {
+            color: #6c757d;
+            margin: 5px 0 0 0;
+            font-size: 1rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2.5rem;
+            color: #6c757d;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.3s ease, transform 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: #667eea;
+            transform: scale(1.1);
+        }
+
+        .period-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .period-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .period-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .period-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .chart-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .chart-type-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chart-type-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .chart-type-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-value.positive {
+            color: #28a745;
+        }
+
+        .stat-value.negative {
+            color: #dc3545;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-bottom: 15px;
+        }
+
+        .volume-container {
+            position: relative;
+            height: 120px;
+            margin-bottom: 20px;
+        }
+
+        .chart-loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .chart-loading.active {
+            display: block;
+        }
+
+        .chart-loading .spinner {
+            border-color: rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+
+            .period-selector {
+                gap: 8px;
+            }
+
+            .period-btn {
+                min-width: 70px;
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+
+            .stats-summary {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-value {
+                font-size: 1.1rem;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .volume-container {
+                height: 100px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -250,6 +479,65 @@ cat > templates/index.html << 'ENDOFFILE'
         <div id="stocksContainer" class="loading">
             <div class="spinner"></div>
             <p style="margin-top: 20px;">Fetching stock data...</p>
+        </div>
+
+        <!-- Chart Modal -->
+        <div id="chartModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="modalTicker">AAPL</h2>
+                        <p id="modalStockName">Apple Inc.</p>
+                    </div>
+                    <button class="close-btn" onclick="closeChartModal()">&times;</button>
+                </div>
+
+                <div class="period-selector">
+                    <button class="period-btn active" data-period="1d">1 Day</button>
+                    <button class="period-btn" data-period="1wk">1 Week</button>
+                    <button class="period-btn" data-period="1mo">1 Month</button>
+                    <button class="period-btn" data-period="1y">1 Year</button>
+                </div>
+
+                <!-- Chart Type Toggle -->
+                <div class="chart-type-selector">
+                    <button class="chart-type-btn active" data-type="line">📈 Line</button>
+                    <button class="chart-type-btn" data-type="candlestick">🕯️ Candlestick</button>
+                </div>
+
+                <!-- Statistics Summary -->
+                <div class="stats-summary" id="statsSummary">
+                    <div class="stat-card">
+                        <div class="stat-label">Period Change</div>
+                        <div class="stat-value" id="statChange">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">High</div>
+                        <div class="stat-value" id="statHigh">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Low</div>
+                        <div class="stat-value" id="statLow">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Average</div>
+                        <div class="stat-value" id="statAvg">-</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+
+                <div class="volume-container">
+                    <canvas id="volumeChart"></canvas>
+                </div>
+
+                <div class="chart-loading">
+                    <div class="spinner"></div>
+                    <p>Loading chart data...</p>
+                </div>
+            </div>
         </div>
 
         <button class="refresh-btn" onclick="loadStocks()">🔄 Refresh</button>
@@ -309,7 +597,7 @@ cat > templates/index.html << 'ENDOFFILE'
                             weeklyText = '<span class="weekly-indicator" style="background: #f0f0f0; color: #666;">Week: ' + weekSign + stock.weekly_change + '%</span>';
                         }
                         
-                        const card = '<div class="stock-card ' + cardColorClass + '" style="animation-delay: ' + (index * 0.1) + 's">' +
+                        const card = '<div class="stock-card ' + cardColorClass + '" style="animation-delay: ' + (index * 0.1) + 's; cursor: pointer;" onclick="openChartModal(\'' + stock.ticker + '\', \'' + stock.name + '\')">' +
                             '<div class="stock-header">' +
                                 '<span class="stock-name">' + stock.name + '</span>' +
                                 '<span class="stock-ticker">' + stock.ticker + '</span>' +
@@ -357,7 +645,486 @@ cat > templates/index.html << 'ENDOFFILE'
 
         loadStocks();
         setInterval(loadStocks, 60000);
+
+        // Chart Modal Functions
+        let currentChart = null;
+        let currentVolumeChart = null;
+        let currentTicker = null;
+        let currentStockName = null;
+        let currentChartType = 'line';
+        let currentChartData = null;
+
+        function openChartModal(ticker, stockName) {
+            currentTicker = ticker;
+            currentStockName = stockName;
+
+            // Update modal header
+            document.getElementById('modalTicker').textContent = ticker;
+            document.getElementById('modalStockName').textContent = stockName;
+
+            // Show modal
+            document.getElementById('chartModal').classList.add('active');
+
+            // Load default period (1 month)
+            loadChartData('1mo');
+        }
+
+        function closeChartModal() {
+            document.getElementById('chartModal').classList.remove('active');
+
+            // Destroy chart instances
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+            if (currentVolumeChart) {
+                currentVolumeChart.destroy();
+                currentVolumeChart = null;
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('chartModal');
+            if (event.target === modal) {
+                closeChartModal();
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeChartModal();
+            }
+        });
+
+        function loadChartData(period) {
+            const chartContainer = document.querySelector('.chart-container');
+            const volumeContainer = document.querySelector('.volume-container');
+            const chartLoading = document.querySelector('.chart-loading');
+
+            // Show loading
+            chartContainer.style.display = 'none';
+            volumeContainer.style.display = 'none';
+            chartLoading.classList.add('active');
+
+            // Update active button
+            document.querySelectorAll('.period-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-period') === period) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Fetch historical data
+            fetch('/api/stocks/' + currentTicker + '/history/' + period)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    // Store data for chart type switching
+                    currentChartData = data;
+
+                    // Hide loading, show charts
+                    chartLoading.classList.remove('active');
+                    chartContainer.style.display = 'block';
+                    volumeContainer.style.display = 'block';
+
+                    // Update statistics
+                    updateStatistics(data.statistics);
+
+                    // Render charts
+                    renderChart(data, currentChartType);
+                    renderVolumeChart(data.data.labels, data.data.volume);
+                })
+                .catch(function(error) {
+                    console.error('Error loading chart:', error);
+                    chartLoading.innerHTML = '<p style="color: #721c24;">Error loading chart data. Please try again.</p>';
+                });
+        }
+
+        function updateStatistics(stats) {
+            const changeEl = document.getElementById('statChange');
+            const highEl = document.getElementById('statHigh');
+            const lowEl = document.getElementById('statLow');
+            const avgEl = document.getElementById('statAvg');
+
+            // Update values
+            highEl.textContent = '$' + stats.high.toFixed(2);
+            lowEl.textContent = '$' + stats.low.toFixed(2);
+            avgEl.textContent = '$' + stats.avg.toFixed(2);
+
+            // Update period change with color
+            const changeSign = stats.period_change >= 0 ? '+' : '';
+            changeEl.textContent = changeSign + stats.period_change.toFixed(2) + '%';
+            changeEl.className = 'stat-value ' + (stats.period_change >= 0 ? 'positive' : 'negative');
+        }
+
+        function renderChart(data, chartType) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+
+            // Destroy existing chart
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const labels = data.data.labels;
+            const prices = data.data.prices;
+            const datasets = [];
+
+            if (chartType === 'line') {
+                // Calculate price range for better visualization
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
+                const priceRange = maxPrice - minPrice;
+
+                // Create gradient
+                const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+                gradient.addColorStop(0, 'rgba(102, 126, 234, 0.5)');
+                gradient.addColorStop(1, 'rgba(118, 75, 162, 0.1)');
+
+                // Main price line
+                datasets.push({
+                    label: 'Price',
+                    data: prices,
+                    borderColor: '#667eea',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#667eea',
+                    pointHoverBorderColor: 'white',
+                    pointHoverBorderWidth: 2,
+                    order: 1
+                });
+
+                // Add moving averages
+                if (data.data.ma_20 && data.data.ma_20.some(v => v !== null)) {
+                    datasets.push({
+                        label: 'MA 20',
+                        data: data.data.ma_20,
+                        borderColor: '#ff6384',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        order: 2
+                    });
+                }
+
+                if (data.data.ma_50 && data.data.ma_50.some(v => v !== null)) {
+                    datasets.push({
+                        label: 'MA 50',
+                        data: data.data.ma_50,
+                        borderColor: '#36a2eb',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        order: 3
+                    });
+                }
+
+                if (data.data.ma_200 && data.data.ma_200.some(v => v !== null)) {
+                    datasets.push({
+                        label: 'MA 200',
+                        data: data.data.ma_200,
+                        borderColor: '#ffcd56',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        order: 4
+                    });
+                }
+
+                // Create line chart
+                currentChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 20,
+                                    padding: 15,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                bodyFont: {
+                                    size: 12
+                                },
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    maxTicksLimit: 8,
+                                    color: '#6c757d'
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    color: '#6c757d',
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // OHLC Bar chart (simpler candlestick visualization)
+                const open = data.data.open;
+                const high = data.data.high;
+                const low = data.data.low;
+                const close = prices;
+
+                // Create color array based on price movement
+                const barColors = close.map((c, i) => c >= open[i] ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)');
+
+                // High-Low range dataset
+                datasets.push({
+                    label: 'High-Low',
+                    data: high,
+                    type: 'line',
+                    borderColor: '#999',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    spanGaps: false
+                });
+
+                datasets.push({
+                    label: 'Low',
+                    data: low,
+                    type: 'line',
+                    borderColor: '#999',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: '-1',
+                    backgroundColor: 'rgba(200, 200, 200, 0.1)',
+                    tension: 0
+                });
+
+                // Close price bars
+                datasets.push({
+                    label: 'Close',
+                    data: close,
+                    type: 'bar',
+                    backgroundColor: barColors,
+                    borderColor: barColors,
+                    borderWidth: 1,
+                    barThickness: 'flex',
+                    maxBarThickness: 12
+                });
+
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    title: function(context) {
+                                        return context[0].label;
+                                    },
+                                    label: function(context) {
+                                        const index = context[0].dataIndex;
+                                        const change = close[index] - open[index];
+                                        const changePercent = (change / open[index]) * 100;
+                                        return [
+                                            'Open: $' + open[index].toFixed(2),
+                                            'High: $' + high[index].toFixed(2),
+                                            'Low: $' + low[index].toFixed(2),
+                                            'Close: $' + close[index].toFixed(2),
+                                            'Change: ' + (change >= 0 ? '+$' : '-$') + Math.abs(change).toFixed(2) + ' (' + (change >= 0 ? '+' : '') + changePercent.toFixed(2) + '%)'
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    maxTicksLimit: 8,
+                                    color: '#6c757d'
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    color: '#6c757d',
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderVolumeChart(labels, volumes) {
+            const ctx = document.getElementById('volumeChart').getContext('2d');
+
+            // Destroy existing chart
+            if (currentVolumeChart) {
+                currentVolumeChart.destroy();
+            }
+
+            // Create volume chart
+            currentVolumeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Volume',
+                        data: volumes,
+                        backgroundColor: 'rgba(102, 126, 234, 0.5)',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    const vol = context.parsed.y;
+                                    if (vol >= 1000000000) return 'Volume: ' + (vol / 1000000000).toFixed(2) + 'B';
+                                    else if (vol >= 1000000) return 'Volume: ' + (vol / 1000000).toFixed(2) + 'M';
+                                    else if (vol >= 1000) return 'Volume: ' + (vol / 1000).toFixed(2) + 'K';
+                                    return 'Volume: ' + vol.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                color: '#6c757d',
+                                callback: function(value) {
+                                    if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+                                    else if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
+                                    else if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
+                                    return value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Add period button click handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                document.querySelectorAll('.period-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        const period = this.getAttribute('data-period');
+                        loadChartData(period);
+                    });
+                });
+
+                // Add chart type button click handlers
+                document.querySelectorAll('.chart-type-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        const type = this.getAttribute('data-type');
+                        currentChartType = type;
+
+                        // Update active button
+                        document.querySelectorAll('.chart-type-btn').forEach(function(b) {
+                            b.classList.remove('active');
+                        });
+                        this.classList.add('active');
+
+                        // Re-render chart with new type
+                        if (currentChartData) {
+                            renderChart(currentChartData, currentChartType);
+                        }
+                    });
+                });
+            }, 100);
+        });
     </script>
 </body>
 </html>
-ENDOFFILE
