@@ -658,21 +658,17 @@
             currentTicker = ticker;
             currentStockName = stockName;
 
-            // Update modal header
             document.getElementById('modalTicker').textContent = ticker;
             document.getElementById('modalStockName').textContent = stockName;
-
-            // Show modal
             document.getElementById('chartModal').classList.add('active');
 
-            // Load default period (1 month)
             loadChartData('1mo');
         }
 
         function closeChartModal() {
             document.getElementById('chartModal').classList.remove('active');
 
-            // Destroy chart instances
+            // Clean up chart instances
             if (currentChart) {
                 currentChart.destroy();
                 currentChart = null;
@@ -683,7 +679,7 @@
             }
         }
 
-        // Close modal when clicking outside
+        // Close on outside click
         window.onclick = function(event) {
             const modal = document.getElementById('chartModal');
             if (event.target === modal) {
@@ -691,7 +687,7 @@
             }
         }
 
-        // Close modal with Escape key
+        // Close on Escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeChartModal();
@@ -703,12 +699,11 @@
             const volumeContainer = document.querySelector('.volume-container');
             const chartLoading = document.querySelector('.chart-loading');
 
-            // Show loading
             chartContainer.style.display = 'none';
             volumeContainer.style.display = 'none';
             chartLoading.classList.add('active');
 
-            // Update active button
+            // Highlight active period button
             document.querySelectorAll('.period-btn').forEach(function(btn) {
                 btn.classList.remove('active');
                 if (btn.getAttribute('data-period') === period) {
@@ -716,7 +711,6 @@
                 }
             });
 
-            // Fetch historical data
             fetch('/api/stocks/' + currentTicker + '/history/' + period)
                 .then(response => response.json())
                 .then(data => {
@@ -724,18 +718,13 @@
                         throw new Error(data.error);
                     }
 
-                    // Store data for chart type switching
                     currentChartData = data;
 
-                    // Hide loading, show charts
                     chartLoading.classList.remove('active');
                     chartContainer.style.display = 'block';
                     volumeContainer.style.display = 'block';
 
-                    // Update statistics
                     updateStatistics(data.statistics);
-
-                    // Render charts
                     renderChart(data, currentChartType);
                     renderVolumeChart(data.data.labels, data.data.volume);
                 })
@@ -751,12 +740,11 @@
             const lowEl = document.getElementById('statLow');
             const avgEl = document.getElementById('statAvg');
 
-            // Update values
             highEl.textContent = '$' + stats.high.toFixed(2);
             lowEl.textContent = '$' + stats.low.toFixed(2);
             avgEl.textContent = '$' + stats.avg.toFixed(2);
 
-            // Update period change with color
+            // Color-code period change
             const changeSign = stats.period_change >= 0 ? '+' : '';
             changeEl.textContent = changeSign + stats.period_change.toFixed(2) + '%';
             changeEl.className = 'stat-value ' + (stats.period_change >= 0 ? 'positive' : 'negative');
@@ -765,7 +753,6 @@
         function renderChart(data, chartType) {
             const ctx = document.getElementById('priceChart').getContext('2d');
 
-            // Destroy existing chart
             if (currentChart) {
                 currentChart.destroy();
             }
@@ -775,17 +762,14 @@
             const datasets = [];
 
             if (chartType === 'line') {
-                // Calculate price range for better visualization
                 const minPrice = Math.min(...prices);
                 const maxPrice = Math.max(...prices);
                 const priceRange = maxPrice - minPrice;
 
-                // Create gradient
                 const gradient = ctx.createLinearGradient(0, 0, 0, 350);
                 gradient.addColorStop(0, 'rgba(102, 126, 234, 0.5)');
                 gradient.addColorStop(1, 'rgba(118, 75, 162, 0.1)');
 
-                // Main price line
                 datasets.push({
                     label: 'Price',
                     data: prices,
@@ -802,7 +786,7 @@
                     order: 1
                 });
 
-                // Add moving averages
+                // Moving averages overlay
                 if (data.data.ma_20 && data.data.ma_20.some(v => v !== null)) {
                     datasets.push({
                         label: 'MA 20',
@@ -845,7 +829,6 @@
                     });
                 }
 
-                // Create line chart
                 currentChart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -913,16 +896,14 @@
                     }
                 });
             } else {
-                // OHLC Bar chart (simpler candlestick visualization)
+                // OHLC candlestick chart
                 const open = data.data.open;
                 const high = data.data.high;
                 const low = data.data.low;
                 const close = prices;
 
-                // Create color array based on price movement
                 const barColors = close.map((c, i) => c >= open[i] ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)');
 
-                // High-Low range dataset
                 datasets.push({
                     label: 'High-Low',
                     data: high,
@@ -947,7 +928,6 @@
                     tension: 0
                 });
 
-                // Close price bars
                 datasets.push({
                     label: 'Close',
                     data: close,
@@ -1029,12 +1009,10 @@
         function renderVolumeChart(labels, volumes) {
             const ctx = document.getElementById('volumeChart').getContext('2d');
 
-            // Destroy existing chart
             if (currentVolumeChart) {
                 currentVolumeChart.destroy();
             }
 
-            // Create volume chart
             currentVolumeChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -1095,7 +1073,7 @@
             });
         }
 
-        // Add period button click handlers
+        // Event handlers for period and chart type buttons
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 document.querySelectorAll('.period-btn').forEach(function(btn) {
@@ -1105,19 +1083,16 @@
                     });
                 });
 
-                // Add chart type button click handlers
                 document.querySelectorAll('.chart-type-btn').forEach(function(btn) {
                     btn.addEventListener('click', function() {
                         const type = this.getAttribute('data-type');
                         currentChartType = type;
 
-                        // Update active button
                         document.querySelectorAll('.chart-type-btn').forEach(function(b) {
                             b.classList.remove('active');
                         });
                         this.classList.add('active');
 
-                        // Re-render chart with new type
                         if (currentChartData) {
                             renderChart(currentChartData, currentChartType);
                         }

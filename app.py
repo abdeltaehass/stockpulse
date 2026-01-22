@@ -38,7 +38,7 @@ def get_stock_history(ticker, period):
     if historical_data is None or historical_data.empty:
         return jsonify({'error': 'No data available'}), 404
 
-    # Format for Chart.js with OHLCV data
+    # Convert historical data to lists for JSON response
     labels = historical_data.index.strftime('%Y-%m-%d %H:%M').tolist()
     close_prices = historical_data['Close'].round(2).tolist()
     open_prices = historical_data['Open'].round(2).tolist()
@@ -46,13 +46,13 @@ def get_stock_history(ticker, period):
     low_prices = historical_data['Low'].round(2).tolist()
     volumes = historical_data['Volume'].tolist()
 
-    # Calculate statistics
+    # Calculate period statistics
     high = float(historical_data['High'].max())
     low = float(historical_data['Low'].min())
     avg = float(historical_data['Close'].mean())
     period_change = ((close_prices[-1] - close_prices[0]) / close_prices[0]) * 100
 
-    # Calculate moving averages and replace NaN with None (null in JSON)
+    # Convert NaN values to null for JSON compatibility
     import math
 
     def nan_to_none(value):
