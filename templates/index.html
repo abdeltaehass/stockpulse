@@ -1,0 +1,363 @@
+cat > templates/index.html << 'ENDOFFILE'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockPulse - Real-Time Market Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .last-updated {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stock-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            animation: slideUp 0.5s ease-out;
+            border: 3px solid transparent;
+        }
+
+        .stock-card.light-red {
+            background: #ffebee;
+            border-color: #ef5350;
+        }
+
+        .stock-card.dark-red {
+            background: #ffcdd2;
+            border-color: #c62828;
+        }
+
+        .stock-card.light-green {
+            background: #e8f5e9;
+            border-color: #66bb6a;
+        }
+
+        .stock-card.dark-green {
+            background: #c8e6c9;
+            border-color: #2e7d32;
+        }
+
+        .stock-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .stock-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stock-ticker {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .price-section {
+            margin-bottom: 20px;
+        }
+
+        .current-price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .price-change {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .price-change.positive {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .price-change.negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .weekly-indicator {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .stock-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.5rem;
+            padding: 50px;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 7px 25px rgba(0,0,0,0.4);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 StockPulse</h1>
+            <p class="subtitle">Real-Time Market Monitor</p>
+            <div class="last-updated" id="lastUpdated">Loading...</div>
+        </header>
+
+        <div id="stocksContainer" class="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px;">Fetching stock data...</p>
+        </div>
+
+        <button class="refresh-btn" onclick="loadStocks()">🔄 Refresh</button>
+    </div>
+
+    <script>
+        function formatNumber(num) {
+            if (num === 'N/A') return 'N/A';
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function formatVolume(vol) {
+            if (vol === 'N/A') return 'N/A';
+            if (vol >= 1000000000) return (vol / 1000000000).toFixed(2) + 'B';
+            else if (vol >= 1000000) return (vol / 1000000).toFixed(2) + 'M';
+            else if (vol >= 1000) return (vol / 1000).toFixed(2) + 'K';
+            return vol.toLocaleString();
+        }
+
+        function loadStocks() {
+            fetch('/api/stocks')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('stocksContainer');
+                    const lastUpdated = document.getElementById('lastUpdated');
+                    
+                    lastUpdated.textContent = 'Last Updated: ' + data.last_updated;
+                    container.innerHTML = '';
+                    container.className = 'stocks-grid';
+                    
+                    data.stocks.forEach(function(stock, index) {
+                        const isPositive = stock.change >= 0;
+                        const changeSymbol = isPositive ? '📈' : '📉';
+                        const changeClass = isPositive ? 'positive' : 'negative';
+                        const changeSign = isPositive ? '+' : '';
+                        
+                        let cardColorClass = '';
+                        let weeklyText = '';
+                        
+                        if (stock.weekly_change <= -3) {
+                            cardColorClass = 'dark-red';
+                            weeklyText = '<span class="weekly-indicator" style="background: #ffcdd2; color: #c62828;">Week: ' + stock.weekly_change + '%</span>';
+                        } else if (stock.weekly_change >= 3) {
+                            cardColorClass = 'dark-green';
+                            weeklyText = '<span class="weekly-indicator" style="background: #c8e6c9; color: #2e7d32;">Week: +' + stock.weekly_change + '%</span>';
+                        } else if (stock.change_percent <= -1) {
+                            cardColorClass = 'light-red';
+                            weeklyText = '<span class="weekly-indicator" style="background: #ffebee; color: #ef5350;">Week: ' + stock.weekly_change + '%</span>';
+                        } else if (stock.change_percent >= 1) {
+                            cardColorClass = 'light-green';
+                            weeklyText = '<span class="weekly-indicator" style="background: #e8f5e9; color: #66bb6a;">Week: +' + stock.weekly_change + '%</span>';
+                        } else {
+                            const weekSign = stock.weekly_change >= 0 ? '+' : '';
+                            weeklyText = '<span class="weekly-indicator" style="background: #f0f0f0; color: #666;">Week: ' + weekSign + stock.weekly_change + '%</span>';
+                        }
+                        
+                        const card = '<div class="stock-card ' + cardColorClass + '" style="animation-delay: ' + (index * 0.1) + 's">' +
+                            '<div class="stock-header">' +
+                                '<span class="stock-name">' + stock.name + '</span>' +
+                                '<span class="stock-ticker">' + stock.ticker + '</span>' +
+                            '</div>' +
+                            '<div class="price-section">' +
+                                '<div class="current-price">$' + formatNumber(stock.current_price) + '</div>' +
+                                '<span class="price-change ' + changeClass + '">' +
+                                    changeSymbol + ' ' + changeSign + '$' + Math.abs(stock.change).toFixed(2) + ' (' + changeSign + stock.change_percent + '%)' +
+                                '</span>' +
+                                weeklyText +
+                            '</div>' +
+                            '<div class="stock-details">' +
+                                '<div class="detail-item">' +
+                                    '<div class="detail-label">Open</div>' +
+                                    '<div class="detail-value">$' + formatNumber(stock.open) + '</div>' +
+                                '</div>' +
+                                '<div class="detail-item">' +
+                                    '<div class="detail-label">Prev Close</div>' +
+                                    '<div class="detail-value">$' + formatNumber(stock.previous_close) + '</div>' +
+                                '</div>' +
+                                '<div class="detail-item">' +
+                                    '<div class="detail-label">Day High</div>' +
+                                    '<div class="detail-value">$' + formatNumber(stock.day_high) + '</div>' +
+                                '</div>' +
+                                '<div class="detail-item">' +
+                                    '<div class="detail-label">Day Low</div>' +
+                                    '<div class="detail-value">$' + formatNumber(stock.day_low) + '</div>' +
+                                '</div>' +
+                                '<div class="detail-item">' +
+                                    '<div class="detail-label">Volume</div>' +
+                                    '<div class="detail-value">' + formatVolume(stock.volume) + '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>';
+                        
+                        container.innerHTML += card;
+                    });
+                })
+                .catch(function(error) {
+                    console.error('Error:', error);
+                    document.getElementById('stocksContainer').innerHTML = 
+                        '<p style="color: white;">Error loading stock data. Please refresh.</p>';
+                });
+        }
+
+        loadStocks();
+        setInterval(loadStocks, 60000);
+    </script>
+</body>
+</html>
+ENDOFFILE
