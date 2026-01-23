@@ -1,8 +1,13 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from stock_data import StockData
+from portfolio import Portfolio
+from database import init_db
 from datetime import datetime
 
 app = Flask(__name__)
+
+# Initialize database on startup
+init_db()
 
 WATCHLIST = ['AAPL', 'MSFT', 'MA', 'GLD', 'AMZN', 'GOOGL', 'SPY', 'TSM', 'NVDA']
 
@@ -89,6 +94,112 @@ def get_stock_history(ticker, period):
             'end_price': close_prices[-1]
         }
     })
+
+@app.route('/api/portfolio/holdings', methods=['GET'])
+def get_portfolio_holdings():
+    """Get all portfolio holdings with P&L"""
+    try:
+        holdings = Portfolio.get_holdings_with_pnl()
+        summary = Portfolio.calculate_portfolio_summary()
+
+        return jsonify({
+            'holdings': holdings,
+            'summary': summary,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/portfolio/holdings', methods=['POST'])
+def add_portfolio_holding():
+    """Add a new portfolio holding"""
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['ticker', 'quantity', 'purchase_price', 'purchase_date']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        # Validate data types and values
+        quantity = float(data['quantity'])
+        purchase_price = float(data['purchase_price'])
+
+        if quantity <= 0:
+            return jsonify({'error': 'Quantity must be positive'}), 400
+        if purchase_price <= 0:
+            return jsonify({'error': 'Purchase price must be positive'}), 400
+
+        # Add holding
+        Portfolio.add_holding(
+            ticker=data['ticker'],
+            quantity=quantity,
+            purchase_price=purchase_price,
+            purchase_date=data['purchase_date'],
+            notes=data.get('notes', '')
+        )
+
+        return jsonify({'success': True, 'message': 'Holding added successfully'}), 201
+
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/portfolio/holdings/<int:holding_id>', methods=['PUT'])
+def update_portfolio_holding(holding_id):
+    """Update an existing portfolio holding"""
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['quantity', 'purchase_price', 'purchase_date']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        quantity = float(data['quantity'])
+        purchase_price = float(data['purchase_price'])
+
+        if quantity <= 0:
+            return jsonify({'error': 'Quantity must be positive'}), 400
+        if purchase_price <= 0:
+            return jsonify({'error': 'Purchase price must be positive'}), 400
+
+        Portfolio.update_holding(
+            holding_id=holding_id,
+            quantity=quantity,
+            purchase_price=purchase_price,
+            purchase_date=data['purchase_date'],
+            notes=data.get('notes', '')
+        )
+
+        return jsonify({'success': True, 'message': 'Holding updated successfully'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/portfolio/holdings/<int:holding_id>', methods=['DELETE'])
+def delete_portfolio_holding(holding_id):
+    """Delete a portfolio holding"""
+    try:
+        Portfolio.delete_holding(holding_id)
+        return jsonify({'success': True, 'message': 'Holding deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/portfolio/performance', methods=['GET'])
+def get_portfolio_performance():
+    """Get portfolio performance metrics"""
+    try:
+        metrics = Portfolio.get_performance_metrics()
+        return jsonify({
+            'metrics': metrics,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080, host='127.0.0.1')

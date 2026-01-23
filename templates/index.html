@@ -239,6 +239,331 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Tab System */
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Portfolio Summary Cards */
+        .portfolio-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .summary-value.positive {
+            color: #28a745;
+        }
+
+        .summary-value.negative {
+            color: #dc3545;
+        }
+
+        .summary-percent {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Holdings Cards */
+        .holdings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .holding-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .holding-card.positive-gain {
+            border-color: #28a745;
+            background: #f0f9f3;
+        }
+
+        .holding-card.negative-gain {
+            border-color: #dc3545;
+            background: #fef5f5;
+        }
+
+        .holding-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .holding-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .holding-ticker {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .holding-actions button {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.2s ease;
+        }
+
+        .holding-actions button:hover {
+            transform: scale(1.2);
+        }
+
+        .holding-details {
+            margin-bottom: 15px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.95rem;
+        }
+
+        .detail-row span:first-child {
+            color: #6c757d;
+        }
+
+        .detail-row span:last-child {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .value-highlight {
+            color: #667eea !important;
+            font-size: 1.1rem !important;
+        }
+
+        .holding-pnl {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .holding-pnl.positive {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .holding-pnl.negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .pnl-amount {
+            font-size: 1.3rem;
+        }
+
+        .pnl-percent {
+            font-size: 1.1rem;
+        }
+
+        .holding-footer {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 0.85rem;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Add Holding Button */
+        .add-holding-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .add-holding-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .cost-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -476,9 +801,128 @@
             <div class="last-updated" id="lastUpdated">Loading...</div>
         </header>
 
-        <div id="stocksContainer" class="loading">
-            <div class="spinner"></div>
-            <p style="margin-top: 20px;">Fetching stock data...</p>
+        <!-- Tab Navigation -->
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="watchlist">📊 Watchlist</button>
+            <button class="tab-btn" data-tab="portfolio">💼 Portfolio</button>
+        </div>
+
+        <!-- Watchlist Tab -->
+        <div id="watchlistTab" class="tab-content active">
+            <div id="stocksContainer" class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 20px;">Fetching stock data...</p>
+            </div>
+        </div>
+
+        <!-- Portfolio Tab -->
+        <div id="portfolioTab" class="tab-content">
+            <!-- Portfolio Summary Cards -->
+            <div class="portfolio-summary">
+                <div class="summary-card">
+                    <div class="summary-label">Total Portfolio Value</div>
+                    <div class="summary-value" id="portfolioTotalValue">$0.00</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Total Gain/Loss</div>
+                    <div class="summary-value" id="portfolioTotalGainLoss">$0.00</div>
+                    <div class="summary-percent" id="portfolioTotalGainLossPercent">0.00%</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Daily Change</div>
+                    <div class="summary-value" id="portfolioDailyChange">$0.00</div>
+                    <div class="summary-percent" id="portfolioDailyChangePercent">0.00%</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Weekly Change</div>
+                    <div class="summary-value" id="portfolioWeeklyChange">$0.00</div>
+                    <div class="summary-percent" id="portfolioWeeklyChangePercent">0.00%</div>
+                </div>
+            </div>
+
+            <!-- Add Stock Button -->
+            <button class="add-holding-btn" onclick="openAddHoldingModal()">
+                ➕ Add Stock to Portfolio
+            </button>
+
+            <!-- Holdings Display -->
+            <div id="portfolioHoldings" class="holdings-container">
+                <div class="empty-state">
+                    <h3>No holdings yet</h3>
+                    <p>Add your first stock to start tracking your portfolio!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Holding Modal -->
+        <div id="addHoldingModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="holdingModalTitle">Add Stock to Portfolio</h2>
+                    </div>
+                    <button class="close-btn" onclick="closeAddHoldingModal()">&times;</button>
+                </div>
+
+                <form id="holdingForm" onsubmit="submitHolding(event)">
+                    <div class="form-group">
+                        <label>Stock Ticker *</label>
+                        <input type="text" id="holdingTicker"
+                               placeholder="e.g., AAPL"
+                               required
+                               pattern="[A-Za-z]{1,5}"
+                               style="text-transform: uppercase;">
+                        <small>Enter a valid stock ticker symbol</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Quantity *</label>
+                            <input type="number" id="holdingQuantity"
+                                   placeholder="e.g., 10"
+                                   required
+                                   min="0.0001"
+                                   step="0.0001">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Purchase Price *</label>
+                            <input type="number" id="holdingPurchasePrice"
+                                   placeholder="e.g., 150.00"
+                                   required
+                                   min="0.01"
+                                   step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Purchase Date *</label>
+                        <input type="date" id="holdingPurchaseDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notes (Optional)</label>
+                        <textarea id="holdingNotes"
+                                  placeholder="Add notes about this investment..."
+                                  rows="3"></textarea>
+                    </div>
+
+                    <div class="cost-preview">
+                        <strong>Total Cost:</strong>
+                        <span id="totalCostPreview">$0.00</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary"
+                                onclick="closeAddHoldingModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            Add to Portfolio
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- Chart Modal -->
@@ -1099,6 +1543,299 @@
                     });
                 });
             }, 100);
+        });
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            const selectedTab = document.getElementById(tabName + 'Tab');
+            const selectedBtn = document.querySelector(`[data-tab="${tabName}"]`);
+
+            if (selectedTab && selectedBtn) {
+                selectedTab.classList.add('active');
+                selectedBtn.classList.add('active');
+            }
+
+            if (tabName === 'portfolio') {
+                loadPortfolio();
+                loadPortfolioPerformance();
+            }
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tab = this.getAttribute('data-tab');
+                switchTab(tab);
+            });
+        });
+
+        // Portfolio management functions
+        function loadPortfolio() {
+            fetch('/api/portfolio/holdings')
+                .then(response => response.json())
+                .then(data => {
+                    displayPortfolioSummary(data.summary);
+                    displayHoldings(data.holdings);
+                })
+                .catch(error => {
+                    console.error('Error loading portfolio:', error);
+                });
+        }
+
+        function loadPortfolioPerformance() {
+            fetch('/api/portfolio/performance')
+                .then(response => response.json())
+                .then(data => {
+                    updatePerformanceMetrics(data.metrics);
+                })
+                .catch(error => {
+                    console.error('Error loading performance:', error);
+                });
+        }
+
+        function displayPortfolioSummary(summary) {
+            document.getElementById('portfolioTotalValue').textContent =
+                '$' + formatNumber(summary.total_value);
+
+            const gainLossEl = document.getElementById('portfolioTotalGainLoss');
+            gainLossEl.textContent = (summary.total_gain_loss >= 0 ? '+' : '') +
+                '$' + formatNumber(Math.abs(summary.total_gain_loss));
+            gainLossEl.className = 'summary-value ' +
+                (summary.total_gain_loss >= 0 ? 'positive' : 'negative');
+
+            document.getElementById('portfolioTotalGainLossPercent').textContent =
+                (summary.total_gain_loss_percent >= 0 ? '+' : '') +
+                summary.total_gain_loss_percent.toFixed(2) + '%';
+        }
+
+        function updatePerformanceMetrics(metrics) {
+            const dailyEl = document.getElementById('portfolioDailyChange');
+            dailyEl.textContent = (metrics.daily_change >= 0 ? '+' : '') +
+                '$' + formatNumber(Math.abs(metrics.daily_change));
+            dailyEl.className = 'summary-value ' +
+                (metrics.daily_change >= 0 ? 'positive' : 'negative');
+
+            document.getElementById('portfolioDailyChangePercent').textContent =
+                (metrics.daily_change_percent >= 0 ? '+' : '') +
+                metrics.daily_change_percent.toFixed(2) + '%';
+
+            const weeklyEl = document.getElementById('portfolioWeeklyChange');
+            weeklyEl.textContent = (metrics.weekly_change >= 0 ? '+' : '') +
+                '$' + formatNumber(Math.abs(metrics.weekly_change));
+            weeklyEl.className = 'summary-value ' +
+                (metrics.weekly_change >= 0 ? 'positive' : 'negative');
+
+            document.getElementById('portfolioWeeklyChangePercent').textContent =
+                (metrics.weekly_change_percent >= 0 ? '+' : '') +
+                metrics.weekly_change_percent.toFixed(2) + '%';
+        }
+
+        function displayHoldings(holdings) {
+            const container = document.getElementById('portfolioHoldings');
+
+            if (holdings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No holdings yet</h3>
+                        <p>Add your first stock to start tracking your portfolio!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '<div class="holdings-grid">' +
+                holdings.map(holding => createHoldingCard(holding)).join('') +
+            '</div>';
+        }
+
+        function createHoldingCard(holding) {
+            const gainClass = holding.gain_loss >= 0 ? 'positive-gain' : 'negative-gain';
+            const pnlClass = holding.gain_loss >= 0 ? 'positive' : 'negative';
+            const pnlSymbol = holding.gain_loss >= 0 ? '+' : '';
+
+            return `
+                <div class="holding-card ${gainClass}">
+                    <div class="holding-header">
+                        <span class="holding-ticker">${holding.ticker}</span>
+                        <div class="holding-actions">
+                            <button onclick="editHolding(${holding.id})" title="Edit">✏️</button>
+                            <button onclick="deleteHolding(${holding.id})" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="holding-details">
+                        <div class="detail-row">
+                            <span>Quantity:</span>
+                            <span>${holding.quantity} shares</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Purchase Price:</span>
+                            <span>$${formatNumber(holding.purchase_price)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Current Price:</span>
+                            <span>$${formatNumber(holding.current_price)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Cost Basis:</span>
+                            <span>$${formatNumber(holding.cost_basis)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Current Value:</span>
+                            <span class="value-highlight">$${formatNumber(holding.current_value)}</span>
+                        </div>
+                    </div>
+                    <div class="holding-pnl ${pnlClass}">
+                        <div class="pnl-amount">${pnlSymbol}$${formatNumber(Math.abs(holding.gain_loss))}</div>
+                        <div class="pnl-percent">${pnlSymbol}${holding.gain_loss_percent.toFixed(2)}%</div>
+                    </div>
+                    <div class="holding-footer">
+                        <span>📅 ${new Date(holding.purchase_date).toLocaleDateString()}</span>
+                        <span>⏱️ ${holding.days_held} days</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Add/Edit holding modal functions
+        let currentEditingHoldingId = null;
+
+        function openAddHoldingModal() {
+            currentEditingHoldingId = null;
+            document.getElementById('holdingModalTitle').textContent = 'Add Stock to Portfolio';
+            document.getElementById('holdingForm').reset();
+            document.getElementById('holdingPurchaseDate').valueAsDate = new Date();
+            document.getElementById('holdingTicker').disabled = false;
+            document.getElementById('addHoldingModal').classList.add('active');
+            updateCostPreview();
+        }
+
+        function editHolding(holdingId) {
+            fetch('/api/portfolio/holdings')
+                .then(response => response.json())
+                .then(data => {
+                    const holding = data.holdings.find(h => h.id === holdingId);
+                    if (holding) {
+                        currentEditingHoldingId = holdingId;
+                        document.getElementById('holdingModalTitle').textContent = 'Edit Holding';
+                        document.getElementById('holdingTicker').value = holding.ticker;
+                        document.getElementById('holdingTicker').disabled = true;
+                        document.getElementById('holdingQuantity').value = holding.quantity;
+                        document.getElementById('holdingPurchasePrice').value = holding.purchase_price;
+                        document.getElementById('holdingPurchaseDate').value =
+                            holding.purchase_date.split('T')[0];
+                        document.getElementById('holdingNotes').value = holding.notes || '';
+                        document.getElementById('addHoldingModal').classList.add('active');
+                        updateCostPreview();
+                    }
+                });
+        }
+
+        function closeAddHoldingModal() {
+            document.getElementById('addHoldingModal').classList.remove('active');
+            document.getElementById('holdingTicker').disabled = false;
+            currentEditingHoldingId = null;
+        }
+
+        function submitHolding(event) {
+            event.preventDefault();
+
+            const holdingData = {
+                ticker: document.getElementById('holdingTicker').value.toUpperCase(),
+                quantity: parseFloat(document.getElementById('holdingQuantity').value),
+                purchase_price: parseFloat(document.getElementById('holdingPurchasePrice').value),
+                purchase_date: document.getElementById('holdingPurchaseDate').value,
+                notes: document.getElementById('holdingNotes').value
+            };
+
+            const url = currentEditingHoldingId
+                ? `/api/portfolio/holdings/${currentEditingHoldingId}`
+                : '/api/portfolio/holdings';
+
+            const method = currentEditingHoldingId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(holdingData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeAddHoldingModal();
+                    loadPortfolio();
+                    loadPortfolioPerformance();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting holding:', error);
+                alert('Error submitting holding. Please try again.');
+            });
+        }
+
+        function deleteHolding(holdingId) {
+            if (!confirm('Are you sure you want to delete this holding?')) {
+                return;
+            }
+
+            fetch(`/api/portfolio/holdings/${holdingId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadPortfolio();
+                    loadPortfolioPerformance();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting holding:', error);
+                alert('Error deleting holding. Please try again.');
+            });
+        }
+
+        function updateCostPreview() {
+            const quantity = parseFloat(document.getElementById('holdingQuantity').value) || 0;
+            const price = parseFloat(document.getElementById('holdingPurchasePrice').value) || 0;
+            const total = quantity * price;
+
+            document.getElementById('totalCostPreview').textContent = '$' + formatNumber(total);
+        }
+
+        document.getElementById('holdingQuantity').addEventListener('input', updateCostPreview);
+        document.getElementById('holdingPurchasePrice').addEventListener('input', updateCostPreview);
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            const chartModal = document.getElementById('chartModal');
+            const holdingModal = document.getElementById('addHoldingModal');
+
+            if (event.target === chartModal) {
+                closeChartModal();
+            }
+            if (event.target === holdingModal) {
+                closeAddHoldingModal();
+            }
+        });
+
+        // Close modals on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeChartModal();
+                closeAddHoldingModal();
+            }
         });
     </script>
 </body>
