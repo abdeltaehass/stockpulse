@@ -2,3 +2,5 @@ yfinance
 pandas
 python-dotenv
 flask
+APScheduler==3.10.4
+requests>=2.31.0

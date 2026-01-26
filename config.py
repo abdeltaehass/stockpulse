@@ -1,0 +1,32 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Config:
+    # Flask settings
+    DEBUG = os.getenv('FLASK_DEBUG', 'True') == 'True'
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+    # Database
+    DATABASE_PATH = 'stockpulse.db'
+
+    # Scheduler
+    SCHEDULER_API_ENABLED = False
+
+    # Email settings (SMTP)
+    SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+    SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
+    SMTP_USERNAME = os.getenv('SMTP_USERNAME')
+    SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
+    SMTP_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL')
+
+    # Telegram settings
+    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+    # Discord settings
+    DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')
+
+    # Alert settings
+    ALERT_CHECK_INTERVAL = int(os.getenv('ALERT_CHECK_INTERVAL', '5'))
+    ALERT_COOLDOWN_HOURS = int(os.getenv('ALERT_COOLDOWN_HOURS', '1'))

@@ -40,5 +40,5 @@ env/
 instance/
 .webassets-cache
 
-# Database (optional - including for now)
-# stockpulse.db
+# Database
+stockpulse.db
