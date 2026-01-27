@@ -100,6 +100,41 @@ def get_stock_history(ticker, period):
         }
     })
 
+@app.route('/api/news')
+def get_news():
+    """Get news for all watchlist stocks or a specific ticker"""
+    try:
+        ticker = request.args.get('ticker', None)
+        limit = request.args.get('limit', 5, type=int)
+        sentiment_filter = request.args.get('sentiment', None)
+
+        all_news = []
+
+        if ticker:
+            tickers = [ticker.upper()]
+        else:
+            tickers = WATCHLIST
+
+        for t in tickers:
+            stock = StockData(t)
+            news = stock.get_news(limit=limit)
+            for article in news:
+                article['ticker'] = t
+            all_news.extend(news)
+
+        all_news.sort(key=lambda x: x['published'], reverse=True)
+
+        if sentiment_filter and sentiment_filter in ['positive', 'negative', 'neutral']:
+            all_news = [n for n in all_news if n['sentiment'] == sentiment_filter]
+
+        return jsonify({
+            'news': all_news,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/portfolio/holdings', methods=['GET'])
 def get_portfolio_holdings():
     """Get all portfolio holdings with P&L"""

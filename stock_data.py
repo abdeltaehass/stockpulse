@@ -64,3 +64,90 @@ class StockData:
         except Exception as e:
             print(f"Error fetching weekly data for {self.ticker}: {e}")
             return 0
+
+    def get_news(self, limit=10):
+        try:
+            news = self.stock.news
+            if not news:
+                return []
+
+            articles = []
+            for item in news[:limit]:
+                content = item.get('content', item)
+
+                title = content.get('title', '')
+                if not title:
+                    continue
+
+                publisher = 'Unknown'
+                if content.get('provider'):
+                    publisher = content['provider'].get('displayName', 'Unknown')
+
+                link = ''
+                if content.get('clickThroughUrl'):
+                    link = content['clickThroughUrl'].get('url', '')
+                elif content.get('canonicalUrl'):
+                    link = content['canonicalUrl'].get('url', '')
+
+                published = 0
+                pub_date = content.get('pubDate', '')
+                if pub_date:
+                    try:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(pub_date.replace('Z', '+00:00'))
+                        published = int(dt.timestamp())
+                    except:
+                        pass
+
+                thumbnail = ''
+                if content.get('thumbnail'):
+                    resolutions = content['thumbnail'].get('resolutions', [])
+                    if resolutions:
+                        thumbnail = resolutions[0].get('url', '')
+                    elif content['thumbnail'].get('originalUrl'):
+                        thumbnail = content['thumbnail']['originalUrl']
+
+                article = {
+                    'title': title,
+                    'publisher': publisher,
+                    'link': link,
+                    'published': published,
+                    'type': content.get('contentType', 'STORY'),
+                    'thumbnail': thumbnail,
+                    'related_tickers': []
+                }
+
+                article['sentiment'] = self._analyze_sentiment(article['title'])
+                articles.append(article)
+
+            return articles
+        except Exception as e:
+            print(f"Error fetching news for {self.ticker}: {e}")
+            return []
+
+    def _analyze_sentiment(self, text):
+        text_lower = text.lower()
+
+        positive_words = [
+            'surge', 'jump', 'gain', 'rise', 'soar', 'rally', 'bull', 'boom',
+            'growth', 'profit', 'beat', 'exceed', 'upgrade', 'buy', 'strong',
+            'record', 'high', 'success', 'win', 'breakthrough', 'innovation',
+            'positive', 'optimistic', 'confidence', 'recovery', 'outperform'
+        ]
+
+        negative_words = [
+            'fall', 'drop', 'plunge', 'crash', 'decline', 'loss', 'bear',
+            'miss', 'fail', 'downgrade', 'sell', 'weak', 'low', 'concern',
+            'fear', 'risk', 'warning', 'cut', 'layoff', 'lawsuit', 'fraud',
+            'investigation', 'negative', 'pessimistic', 'recession', 'crisis'
+        ]
+
+        positive_count = sum(1 for word in positive_words if word in text_lower)
+        negative_count = sum(1 for word in negative_words if word in text_lower)
+
+        if positive_count > negative_count:
+            return 'positive'
+        elif negative_count > positive_count:
+            return 'negative'
+        else:
+            return 'neutral'
