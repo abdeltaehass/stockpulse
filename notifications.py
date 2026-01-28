@@ -8,7 +8,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-def send_email_notification(ticker, alert_type, target_value, current_price):
+def send_email_notification(ticker, alert_type, target_value, current_price, baseline_price=None):
     """Send email alert notification"""
     try:
         # Get notification settings from database
@@ -36,7 +36,29 @@ def send_email_notification(ticker, alert_type, target_value, current_price):
         elif alert_type == 'below':
             message = f"{ticker} has dropped to ${current_price:.2f}, below your target of ${target_value:.2f}"
         else:  # percentage
-            message = f"{ticker} has moved significantly to ${current_price:.2f} (threshold: {target_value}%)"
+            change_pct = ((current_price - baseline_price) / baseline_price) * 100 if baseline_price else 0
+            direction = "up" if change_pct > 0 else "down"
+            message = f"{ticker} has moved {direction} {abs(change_pct):.2f}% (threshold: {target_value}%)"
+
+        # Build percentage detail section for email
+        pct_detail = ""
+        if alert_type == 'percentage' and baseline_price:
+            change_pct = ((current_price - baseline_price) / baseline_price) * 100
+            pct_detail = f"""
+            <table style="width: 100%; margin: 15px 0; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 10px; background: #f8f9fa; border-radius: 8px 0 0 8px;">
+                  <strong>Opened At</strong><br>${baseline_price:.2f}
+                </td>
+                <td style="padding: 10px; background: #f8f9fa;">
+                  <strong>Current Price</strong><br>${current_price:.2f}
+                </td>
+                <td style="padding: 10px; background: #f8f9fa; border-radius: 0 8px 8px 0;">
+                  <strong>Change</strong><br>{"+" if change_pct > 0 else ""}{change_pct:.2f}%
+                </td>
+              </tr>
+            </table>
+            """
 
         # Create email
         msg = MIMEMultipart('alternative')
@@ -53,6 +75,7 @@ def send_email_notification(ticker, alert_type, target_value, current_price):
             <p style="font-size: 24px; font-weight: bold; margin: 20px 0;">
               {ticker}: ${current_price:.2f}
             </p>
+            {pct_detail}
             <hr style="margin: 30px 0;">
             <p style="font-size: 12px; color: #6c757d;">
               This alert has been automatically deactivated.
@@ -79,7 +102,7 @@ def send_email_notification(ticker, alert_type, target_value, current_price):
         return False, error_msg
 
 
-def send_telegram_notification(ticker, alert_type, target_value, current_price):
+def send_telegram_notification(ticker, alert_type, target_value, current_price, baseline_price=None):
     """Send Telegram alert notification"""
     try:
         # Get notification settings from database
@@ -101,9 +124,18 @@ def send_telegram_notification(ticker, alert_type, target_value, current_price):
         elif alert_type == 'below':
             message = f"🚨 *StockPulse Alert*\n\n{ticker} has dropped to ${current_price:.2f}, below your target of ${target_value:.2f}"
         else:  # percentage
-            message = f"🚨 *StockPulse Alert*\n\n{ticker} has moved significantly to ${current_price:.2f} (threshold: {target_value}%)"
+            change_pct = ((current_price - baseline_price) / baseline_price) * 100 if baseline_price else 0
+            direction = "up" if change_pct > 0 else "down"
+            message = f"🚨 *StockPulse Alert*\n\n{ticker} has moved {direction} {abs(change_pct):.2f}% (threshold: {target_value}%)"
 
-        message += f"\n\n📊 Current Price: *${current_price:.2f}*\n\n_This alert has been automatically deactivated._"
+        message += f"\n\n📊 Current Price: *${current_price:.2f}*"
+
+        if alert_type == 'percentage' and baseline_price:
+            change_pct = ((current_price - baseline_price) / baseline_price) * 100
+            message += f"\n📈 Opened At: *${baseline_price:.2f}*"
+            message += f"\n📉 Change: *{'+'if change_pct > 0 else ''}{change_pct:.2f}%*"
+
+        message += f"\n\n_This alert has been automatically deactivated._"
 
         # Send via Telegram Bot API
         url = f"https://api.telegram.org/bot{settings['telegram_bot_token']}/sendMessage"
@@ -125,7 +157,7 @@ def send_telegram_notification(ticker, alert_type, target_value, current_price):
         return False, error_msg
 
 
-def send_discord_notification(ticker, alert_type, target_value, current_price):
+def send_discord_notification(ticker, alert_type, target_value, current_price, baseline_price=None):
     """Send Discord alert notification via webhook"""
     try:
         # Get notification settings from database
@@ -149,26 +181,44 @@ def send_discord_notification(ticker, alert_type, target_value, current_price):
             description = f"{ticker} has dropped to ${current_price:.2f}, below your target of ${target_value:.2f}"
             color = 0xdc3545  # Red
         else:  # percentage
-            description = f"{ticker} has moved significantly to ${current_price:.2f} (threshold: {target_value}%)"
+            change_pct = ((current_price - baseline_price) / baseline_price) * 100 if baseline_price else 0
+            direction = "up" if change_pct > 0 else "down"
+            description = f"{ticker} has moved {direction} {abs(change_pct):.2f}% (threshold: {target_value}%)"
             color = 0x667eea  # Purple
+
+        # Create Discord embed fields
+        fields = [
+            {
+                "name": "Current Price",
+                "value": f"${current_price:.2f}",
+                "inline": True
+            },
+            {
+                "name": "Target",
+                "value": f"${target_value:.2f}" if alert_type != 'percentage' else f"{target_value}%",
+                "inline": True
+            }
+        ]
+
+        if alert_type == 'percentage' and baseline_price:
+            change_pct = ((current_price - baseline_price) / baseline_price) * 100
+            fields.append({
+                "name": "Opened At",
+                "value": f"${baseline_price:.2f}",
+                "inline": True
+            })
+            fields.append({
+                "name": "Change",
+                "value": f"{'+'if change_pct > 0 else ''}{change_pct:.2f}%",
+                "inline": True
+            })
 
         # Create Discord embed
         embed = {
             "title": f"🚨 StockPulse Alert: {ticker}",
             "description": description,
             "color": color,
-            "fields": [
-                {
-                    "name": "Current Price",
-                    "value": f"${current_price:.2f}",
-                    "inline": True
-                },
-                {
-                    "name": "Target",
-                    "value": f"${target_value:.2f}" if alert_type != 'percentage' else f"{target_value}%",
-                    "inline": True
-                }
-            ],
+            "fields": fields,
             "footer": {
                 "text": "This alert has been automatically deactivated."
             }

@@ -413,6 +413,24 @@ def update_alert(alert_id):
         update_fields = []
         values = []
 
+        if 'alert_type' in data:
+            if data['alert_type'] not in ['above', 'below', 'percentage']:
+                return jsonify({'error': 'Invalid alert type'}), 400
+            update_fields.append('alert_type = ?')
+            values.append(data['alert_type'])
+
+            # If switching to percentage, recalculate baseline_price
+            if data['alert_type'] == 'percentage':
+                with get_db_connection() as conn:
+                    cursor = conn.execute('SELECT ticker FROM price_alerts WHERE id = ?', (alert_id,))
+                    alert_row = cursor.fetchone()
+                if alert_row:
+                    stock = StockData(alert_row['ticker'])
+                    current_price = stock.get_current_price()
+                    if current_price:
+                        update_fields.append('baseline_price = ?')
+                        values.append(current_price)
+
         if 'target_value' in data:
             update_fields.append('target_value = ?')
             values.append(float(data['target_value']))

@@ -1694,7 +1694,7 @@
                                 onclick="closeAddAlertModal()">
                             Cancel
                         </button>
-                        <button type="submit" class="btn-primary">
+                        <button type="submit" class="btn-primary" id="alertSubmitBtn">
                             Create Alert
                         </button>
                     </div>
@@ -2943,6 +2943,7 @@
         }
 
         function displayAlerts(alerts) {
+            loadedAlerts = alerts;
             const container = document.getElementById('alertsContainer');
 
             if (alerts.length === 0) {
@@ -2992,6 +2993,7 @@
                     <div class="holding-header">
                         <span class="holding-ticker">${alert.ticker}</span>
                         <div class="holding-actions">
+                            <button onclick="editAlert(${alert.id})" title="Edit">✏️</button>
                             <button onclick="toggleAlert(${alert.id}, ${isActive ? 0 : 1})"
                                     title="${isActive ? 'Deactivate' : 'Activate'}">
                                 ${isActive ? '⏸️' : '▶️'}
@@ -3114,11 +3116,18 @@
             `;
         }
 
+        // Track current editing state
+        let editingAlertId = null;
+        let loadedAlerts = [];
+
         // Add alert modal functions
         function openAddAlertModal() {
+            editingAlertId = null;
             document.getElementById('alertModalTitle').textContent = 'Create Price Alert';
             document.getElementById('alertForm').reset();
             document.getElementById('alertNotifyEmail').checked = true;
+            document.getElementById('alertTicker').disabled = false;
+            document.getElementById('alertSubmitBtn').textContent = 'Create Alert';
             document.getElementById('addAlertModal').classList.add('active');
             updateAlertPreview();
         }
@@ -3140,8 +3149,12 @@
                 notes: document.getElementById('alertNotes').value
             };
 
-            fetch('/api/alerts', {
-                method: 'POST',
+            const isEditing = editingAlertId !== null;
+            const url = isEditing ? `/api/alerts/${editingAlertId}` : '/api/alerts';
+            const method = isEditing ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -3152,14 +3165,18 @@
                 if (data.success) {
                     closeAddAlertModal();
                     loadAlerts();
-                    alert(`✅ Alert created! Current price: $${data.current_price.toFixed(2)}`);
+                    if (isEditing) {
+                        window.alert('Alert updated successfully!');
+                    } else {
+                        window.alert(`Alert created! Current price: $${data.current_price.toFixed(2)}`);
+                    }
                 } else {
-                    alert('❌ Error: ' + (data.error || 'Unknown error'));
+                    window.alert('Error: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
-                console.error('Error creating alert:', error);
-                alert('❌ Error creating alert. Please try again.');
+                console.error('Error saving alert:', error);
+                window.alert('Error saving alert. Please try again.');
             });
         }
 
@@ -3205,6 +3222,31 @@
                 console.error('Error deleting alert:', error);
                 alert('Error deleting alert. Please try again.');
             });
+        }
+
+        function editAlert(alertId) {
+            const alert = loadedAlerts.find(a => a.id === alertId);
+            if (!alert) {
+                window.alert('Alert not found. Please refresh the page.');
+                return;
+            }
+
+            editingAlertId = alertId;
+            document.getElementById('alertModalTitle').textContent = 'Edit Price Alert';
+            document.getElementById('alertSubmitBtn').textContent = 'Update Alert';
+
+            // Pre-populate form fields
+            document.getElementById('alertTicker').value = alert.ticker;
+            document.getElementById('alertTicker').disabled = true;
+            document.getElementById('alertType').value = alert.alert_type;
+            document.getElementById('alertTargetValue').value = alert.target_value;
+            document.getElementById('alertNotifyEmail').checked = alert.notify_email === 1;
+            document.getElementById('alertNotifyTelegram').checked = alert.notify_telegram === 1;
+            document.getElementById('alertNotifyDiscord').checked = alert.notify_discord === 1;
+            document.getElementById('alertNotes').value = alert.notes || '';
+
+            updateAlertPreview();
+            document.getElementById('addAlertModal').classList.add('active');
         }
 
         // Update alert preview when form changes

@@ -91,11 +91,12 @@ def check_single_alert(alert, current_price):
 
         logger.info(f"Alert {alert_id} triggered: {ticker} at ${current_price}")
         trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
-                     alert['notify_email'], alert['notify_telegram'], alert['notify_discord'])
+                     alert['notify_email'], alert['notify_telegram'], alert['notify_discord'],
+                     baseline_price)
 
 
 def trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
-                  notify_email, notify_telegram, notify_discord):
+                  notify_email, notify_telegram, notify_discord, baseline_price=None):
     """Handle alert triggering: send notifications and update database"""
     email_sent, email_error = False, None
     telegram_sent, telegram_error = False, None
@@ -105,7 +106,7 @@ def trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
     if notify_email:
         try:
             email_sent, email_error = send_email_notification(
-                ticker, alert_type, target_value, current_price
+                ticker, alert_type, target_value, current_price, baseline_price
             )
             if email_sent:
                 logger.info(f"Email sent for alert {alert_id}")
@@ -119,7 +120,7 @@ def trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
     if notify_telegram:
         try:
             telegram_sent, telegram_error = send_telegram_notification(
-                ticker, alert_type, target_value, current_price
+                ticker, alert_type, target_value, current_price, baseline_price
             )
             if telegram_sent:
                 logger.info(f"Telegram sent for alert {alert_id}")
@@ -133,7 +134,7 @@ def trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
     if notify_discord:
         try:
             discord_sent, discord_error = send_discord_notification(
-                ticker, alert_type, target_value, current_price
+                ticker, alert_type, target_value, current_price, baseline_price
             )
             if discord_sent:
                 logger.info(f"Discord sent for alert {alert_id}")
