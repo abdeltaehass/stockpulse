@@ -326,6 +326,208 @@
             display: block;
         }
 
+        /* Sub-tabs for My Stocks */
+        .sub-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .sub-tab-btn {
+            background: var(--section-bg);
+            border: 2px solid var(--input-border);
+            color: var(--card-text);
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sub-tab-btn:hover {
+            background: var(--input-border);
+        }
+
+        .sub-tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .sub-tab-content {
+            display: none;
+        }
+
+        .sub-tab-content.active {
+            display: block;
+        }
+
+        /* Search Container */
+        .search-container {
+            display: flex;
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+        }
+
+        .search-container input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid var(--input-border);
+            border-radius: 15px;
+            font-size: 1rem;
+            background: var(--card-bg);
+            color: var(--card-text);
+            transition: border-color 0.3s ease;
+        }
+
+        .search-container input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-container input::placeholder {
+            color: var(--card-secondary);
+        }
+
+        .search-btn {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .search-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .search-results {
+            margin-bottom: 30px;
+        }
+
+        /* Top Movers Section */
+        .top-movers-section {
+            margin-top: 20px;
+        }
+
+        .section-title {
+            color: white;
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .movers-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .mover-tab-btn {
+            background: var(--section-bg);
+            border: 2px solid var(--input-border);
+            color: var(--card-text);
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mover-tab-btn:hover {
+            background: var(--input-border);
+        }
+
+        .mover-tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .top-movers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .mover-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px var(--shadow-color);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mover-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .mover-rank {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-right: 15px;
+        }
+
+        .mover-info {
+            flex: 1;
+        }
+
+        .mover-ticker {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--card-text);
+        }
+
+        .mover-name {
+            font-size: 0.9rem;
+            color: var(--card-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .mover-price {
+            text-align: right;
+        }
+
+        .mover-current {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--card-text);
+        }
+
+        .mover-change {
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 8px;
+        }
+
+        .mover-change.positive {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .mover-change.negative {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
         /* Portfolio Summary Cards */
         .portfolio-summary {
             display: grid;
@@ -1126,55 +1328,91 @@
 
         <!-- Tab Navigation -->
         <div class="tabs-container">
-            <button class="tab-btn active" data-tab="watchlist">📊 Watchlist</button>
-            <button class="tab-btn" data-tab="portfolio">💼 Portfolio</button>
+            <button class="tab-btn active" data-tab="mystocks">📊 My Stocks</button>
+            <button class="tab-btn" data-tab="discover">🔍 Discover</button>
             <button class="tab-btn" data-tab="alerts">🔔 Alerts</button>
             <button class="tab-btn" data-tab="news">📰 News</button>
         </div>
 
-        <!-- Watchlist Tab -->
-        <div id="watchlistTab" class="tab-content active">
-            <div id="stocksContainer" class="loading">
-                <div class="spinner"></div>
-                <p style="margin-top: 20px;">Fetching stock data...</p>
+        <!-- My Stocks Tab (Merged Watchlist + Portfolio) -->
+        <div id="mystocksTab" class="tab-content active">
+            <!-- Sub-tabs for Watchlist and Portfolio -->
+            <div class="sub-tabs">
+                <button class="sub-tab-btn active" data-subtab="watchlist">📈 Watchlist</button>
+                <button class="sub-tab-btn" data-subtab="portfolio">💼 Portfolio</button>
+            </div>
+
+            <!-- Watchlist Sub-tab -->
+            <div id="watchlistSubTab" class="sub-tab-content active">
+                <div id="stocksContainer" class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px;">Fetching stock data...</p>
+                </div>
+            </div>
+
+            <!-- Portfolio Sub-tab -->
+            <div id="portfolioSubTab" class="sub-tab-content">
+                <!-- Portfolio Summary Cards -->
+                <div class="portfolio-summary">
+                    <div class="summary-card">
+                        <div class="summary-label">Total Portfolio Value</div>
+                        <div class="summary-value" id="portfolioTotalValue">$0.00</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Total Gain/Loss</div>
+                        <div class="summary-value" id="portfolioTotalGainLoss">$0.00</div>
+                        <div class="summary-percent" id="portfolioTotalGainLossPercent">0.00%</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Daily Change</div>
+                        <div class="summary-value" id="portfolioDailyChange">$0.00</div>
+                        <div class="summary-percent" id="portfolioDailyChangePercent">0.00%</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Weekly Change</div>
+                        <div class="summary-value" id="portfolioWeeklyChange">$0.00</div>
+                        <div class="summary-percent" id="portfolioWeeklyChangePercent">0.00%</div>
+                    </div>
+                </div>
+
+                <!-- Add Stock Button -->
+                <button class="add-holding-btn" onclick="openAddHoldingModal()">
+                    ➕ Add Stock to Portfolio
+                </button>
+
+                <!-- Holdings Display -->
+                <div id="portfolioHoldings" class="holdings-container">
+                    <div class="empty-state">
+                        <h3>No holdings yet</h3>
+                        <p>Add your first stock to start tracking your portfolio!</p>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Portfolio Tab -->
-        <div id="portfolioTab" class="tab-content">
-            <!-- Portfolio Summary Cards -->
-            <div class="portfolio-summary">
-                <div class="summary-card">
-                    <div class="summary-label">Total Portfolio Value</div>
-                    <div class="summary-value" id="portfolioTotalValue">$0.00</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-label">Total Gain/Loss</div>
-                    <div class="summary-value" id="portfolioTotalGainLoss">$0.00</div>
-                    <div class="summary-percent" id="portfolioTotalGainLossPercent">0.00%</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-label">Daily Change</div>
-                    <div class="summary-value" id="portfolioDailyChange">$0.00</div>
-                    <div class="summary-percent" id="portfolioDailyChangePercent">0.00%</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-label">Weekly Change</div>
-                    <div class="summary-value" id="portfolioWeeklyChange">$0.00</div>
-                    <div class="summary-percent" id="portfolioWeeklyChangePercent">0.00%</div>
-                </div>
+        <!-- Discover Tab -->
+        <div id="discoverTab" class="tab-content">
+            <!-- Search Bar -->
+            <div class="search-container">
+                <input type="text" id="stockSearchInput" placeholder="Search by ticker or company name (e.g., AAPL, Apple)">
+                <button class="search-btn" onclick="searchStock()">🔍 Search</button>
             </div>
 
-            <!-- Add Stock Button -->
-            <button class="add-holding-btn" onclick="openAddHoldingModal()">
-                ➕ Add Stock to Portfolio
-            </button>
+            <!-- Search Results -->
+            <div id="searchResults" class="search-results" style="display: none;"></div>
 
-            <!-- Holdings Display -->
-            <div id="portfolioHoldings" class="holdings-container">
-                <div class="empty-state">
-                    <h3>No holdings yet</h3>
-                    <p>Add your first stock to start tracking your portfolio!</p>
+            <!-- Top Movers Section -->
+            <div class="top-movers-section">
+                <h2 class="section-title">🔥 Top 10 Movers Today</h2>
+                <div class="movers-tabs">
+                    <button class="mover-tab-btn active" data-mover="gainers">📈 Top Gainers</button>
+                    <button class="mover-tab-btn" data-mover="losers">📉 Top Losers</button>
+                </div>
+                <div id="topMoversContainer" class="top-movers-grid">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 20px;">Loading top movers...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2181,15 +2419,240 @@
                 selectedBtn.classList.add('active');
             }
 
-            if (tabName === 'portfolio') {
-                loadPortfolio();
-                loadPortfolioPerformance();
+            if (tabName === 'mystocks') {
+                loadStockData();
+            }
+
+            if (tabName === 'discover') {
+                loadTopMovers('gainers');
             }
 
             if (tabName === 'news') {
                 loadNews();
             }
         }
+
+        // Sub-tab switching for My Stocks
+        function switchSubTab(subTabName) {
+            document.querySelectorAll('.sub-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            const selectedTab = document.getElementById(subTabName + 'SubTab');
+            const selectedBtn = document.querySelector(`[data-subtab="${subTabName}"]`);
+
+            if (selectedTab && selectedBtn) {
+                selectedTab.classList.add('active');
+                selectedBtn.classList.add('active');
+            }
+
+            if (subTabName === 'portfolio') {
+                loadPortfolio();
+                loadPortfolioPerformance();
+            }
+        }
+
+        // Initialize sub-tab click handlers
+        document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const subTab = this.getAttribute('data-subtab');
+                switchSubTab(subTab);
+            });
+        });
+
+        // Top Movers functions
+        let currentMoverType = 'gainers';
+
+        function loadTopMovers(type) {
+            currentMoverType = type || currentMoverType;
+            const container = document.getElementById('topMoversContainer');
+
+            document.querySelectorAll('.mover-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-mover="${currentMoverType}"]`).classList.add('active');
+
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px; color: white;">Loading top ${currentMoverType}...</p>
+                </div>
+            `;
+
+            fetch('/api/stocks/top-movers')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <h3>Error loading data</h3>
+                                <p>${data.error}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const stocks = currentMoverType === 'gainers' ? data.gainers : data.losers;
+                    renderTopMovers(stocks);
+                })
+                .catch(error => {
+                    console.error('Error loading top movers:', error);
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>Error loading data</h3>
+                            <p>Please try again later.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderTopMovers(stocks) {
+            const container = document.getElementById('topMoversContainer');
+
+            if (!stocks || stocks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No data available</h3>
+                        <p>Market data is currently unavailable.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = stocks.map((stock, index) => {
+                const changeClass = stock.change_percent >= 0 ? 'positive' : 'negative';
+                const changeSign = stock.change_percent >= 0 ? '+' : '';
+
+                return `
+                    <div class="mover-card" onclick="openChartModal('${stock.ticker}', '${stock.name}')">
+                        <span class="mover-rank">#${index + 1}</span>
+                        <div class="mover-info">
+                            <div class="mover-ticker">${stock.ticker}</div>
+                            <div class="mover-name">${stock.name}</div>
+                        </div>
+                        <div class="mover-price">
+                            <div class="mover-current">$${formatNumber(stock.current_price)}</div>
+                            <div class="mover-change ${changeClass}">${changeSign}${stock.change_percent}%</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize mover tab click handlers
+        document.querySelectorAll('.mover-tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const type = this.getAttribute('data-mover');
+                loadTopMovers(type);
+            });
+        });
+
+        // Stock Search functions
+        function searchStock() {
+            const query = document.getElementById('stockSearchInput').value.trim();
+            if (!query) {
+                alert('Please enter a ticker symbol or company name');
+                return;
+            }
+
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.style.display = 'block';
+            resultsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px; color: white;">Searching for "${query}"...</p>
+                </div>
+            `;
+
+            fetch(`/api/stocks/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        resultsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <h3>Error</h3>
+                                <p>${data.error}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    if (!data.found) {
+                        resultsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <h3>No results found</h3>
+                                <p>${data.message}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    renderSearchResult(data.stock);
+                })
+                .catch(error => {
+                    console.error('Error searching stock:', error);
+                    resultsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <h3>Error</h3>
+                            <p>Failed to search. Please try again.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderSearchResult(stock) {
+            const container = document.getElementById('searchResults');
+            const changeClass = stock.change_percent >= 0 ? 'positive' : 'negative';
+            const changeSign = stock.change_percent >= 0 ? '+' : '';
+            const weeklySign = stock.weekly_change >= 0 ? '+' : '';
+
+            container.innerHTML = `
+                <div class="stock-card" style="max-width: 600px; margin: 0 auto; cursor: pointer;" onclick="openChartModal('${stock.ticker}', '${stock.name}')">
+                    <div class="stock-header">
+                        <span class="stock-name">${stock.name}</span>
+                        <span class="stock-ticker">${stock.ticker}</span>
+                    </div>
+                    <div class="price-section">
+                        <div class="current-price">$${formatNumber(stock.current_price)}</div>
+                        <span class="price-change ${changeClass}">
+                            ${changeSign}$${Math.abs(stock.change).toFixed(2)} (${changeSign}${stock.change_percent}%)
+                        </span>
+                        <span class="weekly-indicator ${stock.weekly_change >= 0 ? 'positive' : 'negative'}">
+                            Week: ${weeklySign}${stock.weekly_change}%
+                        </span>
+                    </div>
+                    <div class="stock-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Open</div>
+                            <div class="detail-value">$${formatNumber(stock.open)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Prev Close</div>
+                            <div class="detail-value">$${formatNumber(stock.previous_close)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Day High</div>
+                            <div class="detail-value">$${formatNumber(stock.day_high)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Day Low</div>
+                            <div class="detail-value">$${formatNumber(stock.day_low)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Allow Enter key to search
+        document.getElementById('stockSearchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchStock();
+            }
+        });
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -2872,15 +3335,12 @@
             });
         }
 
-        // Update tab switch to load alerts and news
+        // Update tab switch to load alerts
         const originalSwitchTab = switchTab;
         switchTab = function(tabName) {
             originalSwitchTab(tabName);
             if (tabName === 'alerts') {
                 loadAlerts();
-            }
-            if (tabName === 'news') {
-                loadNews();
             }
         };
 

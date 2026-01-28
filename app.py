@@ -36,6 +36,69 @@ def get_stocks():
         'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     })
 
+@app.route('/api/stocks/top-movers')
+def get_top_movers():
+    """Get top 10 gainers and losers for the day"""
+    try:
+        popular_tickers = [
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK-B', 'JPM', 'V',
+            'JNJ', 'WMT', 'PG', 'MA', 'HD', 'CVX', 'MRK', 'ABBV', 'PFE', 'KO',
+            'PEP', 'COST', 'TMO', 'AVGO', 'MCD', 'CSCO', 'ACN', 'ABT', 'DHR', 'NKE',
+            'AMD', 'INTC', 'QCOM', 'TXN', 'ORCL', 'CRM', 'ADBE', 'NFLX', 'PYPL', 'DIS'
+        ]
+
+        stocks_data = []
+        for ticker in popular_tickers:
+            try:
+                stock = StockData(ticker)
+                info = stock.get_stock_info()
+                if info and info.get('change_percent') is not None:
+                    stocks_data.append(info)
+            except:
+                continue
+
+        gainers = sorted([s for s in stocks_data if s.get('change_percent', 0) > 0],
+                        key=lambda x: x.get('change_percent', 0), reverse=True)[:10]
+
+        losers = sorted([s for s in stocks_data if s.get('change_percent', 0) < 0],
+                       key=lambda x: x.get('change_percent', 0))[:10]
+
+        return jsonify({
+            'gainers': gainers,
+            'losers': losers,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/stocks/search')
+def search_stock():
+    """Search for a stock by ticker or name"""
+    try:
+        query = request.args.get('q', '').strip().upper()
+        if not query:
+            return jsonify({'error': 'Search query required'}), 400
+
+        stock = StockData(query)
+        info = stock.get_stock_info()
+
+        if info and info.get('current_price'):
+            info['weekly_change'] = stock.get_weekly_change()
+            return jsonify({
+                'found': True,
+                'stock': info,
+                'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+        else:
+            return jsonify({
+                'found': False,
+                'message': f'No stock found for "{query}"'
+            })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/stocks/<ticker>/history/<period>')
 def get_stock_history(ticker, period):
     valid_periods = ['1d', '1wk', '1mo', '1y']
