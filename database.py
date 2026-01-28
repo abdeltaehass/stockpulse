@@ -83,7 +83,19 @@ def init_db():
                 telegram_bot_token TEXT,
                 discord_enabled INTEGER DEFAULT 0,
                 discord_webhook_url TEXT,
+                daily_report_enabled INTEGER DEFAULT 0,
+                daily_report_time TEXT DEFAULT '08:00',
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Add daily report columns if they don't exist (migration for existing databases)
+        try:
+            conn.execute('ALTER TABLE notification_settings ADD COLUMN daily_report_enabled INTEGER DEFAULT 0')
+        except:
+            pass
+        try:
+            conn.execute("ALTER TABLE notification_settings ADD COLUMN daily_report_time TEXT DEFAULT '08:00'")
+        except:
+            pass

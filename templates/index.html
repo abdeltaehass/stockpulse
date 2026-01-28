@@ -2069,6 +2069,34 @@
                         </button>
                     </div>
 
+                    <!-- Daily Report Settings -->
+                    <div class="settings-section">
+                        <h3 style="margin-bottom: 15px;">📊 Daily Watchlist Report</h3>
+                        <p style="font-size: 13px; color: var(--card-text); opacity: 0.7; margin-bottom: 15px;">
+                            Receive a daily analysis of all watchlist stocks with bullish/bearish signals,
+                            confidence scores, and technical indicators via your enabled channels.
+                        </p>
+
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="settingsDailyReportEnabled">
+                                <span>Enable daily watchlist report</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Report Time (24h format)</label>
+                            <input type="time" id="settingsDailyReportTime" value="08:00">
+                            <small>Report runs Monday-Friday at the specified time</small>
+                        </div>
+
+                        <button type="button" class="btn-secondary"
+                                style="width: 100%;"
+                                onclick="sendDailyReportNow()">
+                            📤 Send Report Now
+                        </button>
+                    </div>
+
                     <div class="form-actions">
                         <button type="button" class="btn-secondary"
                                 onclick="closeNotificationSettingsModal()">
@@ -3805,6 +3833,8 @@
                     document.getElementById('settingsTelegramChatId').value = data.telegram_chat_id || '';
                     document.getElementById('settingsDiscordEnabled').checked = data.discord_enabled === 1;
                     document.getElementById('settingsDiscordWebhookUrl').value = data.discord_webhook_url || '';
+                    document.getElementById('settingsDailyReportEnabled').checked = data.daily_report_enabled === 1;
+                    document.getElementById('settingsDailyReportTime').value = data.daily_report_time || '08:00';
                 })
                 .catch(error => {
                     console.error('Error loading settings:', error);
@@ -3821,7 +3851,9 @@
                 telegram_bot_token: document.getElementById('settingsTelegramBotToken').value,
                 telegram_chat_id: document.getElementById('settingsTelegramChatId').value,
                 discord_enabled: document.getElementById('settingsDiscordEnabled').checked ? 1 : 0,
-                discord_webhook_url: document.getElementById('settingsDiscordWebhookUrl').value
+                discord_webhook_url: document.getElementById('settingsDiscordWebhookUrl').value,
+                daily_report_enabled: document.getElementById('settingsDailyReportEnabled').checked ? 1 : 0,
+                daily_report_time: document.getElementById('settingsDailyReportTime').value || '08:00'
             };
 
             fetch('/api/notifications/settings', {
@@ -3873,6 +3905,36 @@
             .catch(error => {
                 console.error('Error sending test notification:', error);
                 alert(`❌ Error sending test ${channel}. Please try again.`);
+                button.disabled = false;
+                button.textContent = originalText;
+            });
+        }
+
+        function sendDailyReportNow() {
+            const button = event.target;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = '⏳ Generating report...';
+
+            fetch('/api/daily-report/trigger', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Daily report sent! Check your enabled notification channels.');
+                } else {
+                    alert('Failed to send daily report: ' + (data.error || 'Unknown error'));
+                }
+                button.disabled = false;
+                button.textContent = originalText;
+            })
+            .catch(error => {
+                console.error('Error triggering daily report:', error);
+                alert('Error sending daily report. Please try again.');
                 button.disabled = false;
                 button.textContent = originalText;
             });

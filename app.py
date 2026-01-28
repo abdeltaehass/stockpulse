@@ -3,7 +3,7 @@ from stock_data import StockData
 from portfolio import Portfolio
 from predictor import StockPredictor
 from database import init_db, get_db_connection
-from scheduler import start_scheduler
+from scheduler import start_scheduler, reschedule_daily_report
 from notifications import send_email_notification, send_telegram_notification, send_discord_notification
 from datetime import datetime
 
@@ -529,7 +529,8 @@ def get_notification_settings():
         with get_db_connection() as conn:
             cursor = conn.execute('''
                 SELECT email_enabled, email_address, telegram_enabled,
-                       telegram_chat_id, telegram_bot_token, discord_enabled, discord_webhook_url
+                       telegram_chat_id, telegram_bot_token, discord_enabled, discord_webhook_url,
+                       daily_report_enabled, daily_report_time
                 FROM notification_settings
                 WHERE id = 1
             ''')
@@ -538,7 +539,6 @@ def get_notification_settings():
             if settings:
                 return jsonify(dict(settings))
             else:
-                # Return default settings if not configured yet
                 return jsonify({
                     'email_enabled': 0,
                     'email_address': '',
@@ -546,7 +546,9 @@ def get_notification_settings():
                     'telegram_chat_id': '',
                     'telegram_bot_token': '',
                     'discord_enabled': 0,
-                    'discord_webhook_url': ''
+                    'discord_webhook_url': '',
+                    'daily_report_enabled': 0,
+                    'daily_report_time': '08:00'
                 })
 
     except Exception as e:
@@ -564,12 +566,12 @@ def update_notification_settings():
             exists = cursor.fetchone()
 
             if exists:
-                # Update existing settings
                 conn.execute('''
                     UPDATE notification_settings
                     SET email_enabled = ?, email_address = ?,
                         telegram_enabled = ?, telegram_chat_id = ?, telegram_bot_token = ?,
                         discord_enabled = ?, discord_webhook_url = ?,
+                        daily_report_enabled = ?, daily_report_time = ?,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = 1
                 ''', (
@@ -579,15 +581,17 @@ def update_notification_settings():
                     data.get('telegram_chat_id', ''),
                     data.get('telegram_bot_token', ''),
                     data.get('discord_enabled', 0),
-                    data.get('discord_webhook_url', '')
+                    data.get('discord_webhook_url', ''),
+                    data.get('daily_report_enabled', 0),
+                    data.get('daily_report_time', '08:00')
                 ))
             else:
-                # Insert new settings
                 conn.execute('''
                     INSERT INTO notification_settings
                     (id, email_enabled, email_address, telegram_enabled, telegram_chat_id,
-                     telegram_bot_token, discord_enabled, discord_webhook_url)
-                    VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+                     telegram_bot_token, discord_enabled, discord_webhook_url,
+                     daily_report_enabled, daily_report_time)
+                    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     data.get('email_enabled', 0),
                     data.get('email_address', ''),
@@ -595,8 +599,15 @@ def update_notification_settings():
                     data.get('telegram_chat_id', ''),
                     data.get('telegram_bot_token', ''),
                     data.get('discord_enabled', 0),
-                    data.get('discord_webhook_url', '')
+                    data.get('discord_webhook_url', ''),
+                    data.get('daily_report_enabled', 0),
+                    data.get('daily_report_time', '08:00')
                 ))
+
+        try:
+            reschedule_daily_report()
+        except Exception:
+            pass
 
         return jsonify({'success': True, 'message': 'Settings updated successfully'})
 
@@ -644,6 +655,16 @@ def test_notification():
             else:
                 return jsonify({'success': False, 'error': error}), 500
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/daily-report/trigger', methods=['POST'])
+def trigger_daily_report():
+    """Manually trigger the daily watchlist report"""
+    try:
+        from daily_report import generate_daily_report
+        generate_daily_report()
+        return jsonify({'success': True, 'message': 'Daily report sent successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
