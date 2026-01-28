@@ -13,11 +13,42 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: white;
+            --card-text: #333;
+            --card-secondary: #6c757d;
+            --card-border: transparent;
+            --modal-bg: white;
+            --input-bg: white;
+            --input-border: #e0e0e0;
+            --section-bg: #f8f9fa;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --title-color: #333;
+            --price-color: #333;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --card-bg: #1e1e2f;
+            --card-text: #ffffff;
+            --card-secondary: #b0b0b0;
+            --card-border: #2d2d44;
+            --modal-bg: #1e1e2f;
+            --input-bg: #2d2d44;
+            --input-border: #3d3d5c;
+            --section-bg: #252538;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --title-color: #ffffff;
+            --price-color: #ffffff;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 20px;
+            transition: background 0.3s ease;
         }
 
         .container {
@@ -62,32 +93,33 @@
         }
 
         .stock-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 20px;
             padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px var(--shadow-color);
             transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
             animation: slideUp 0.5s ease-out;
-            border: 3px solid transparent;
+            border: 3px solid var(--card-border);
+            color: var(--card-text);
         }
 
         .stock-card.light-red {
-            background: #ffebee;
+            background: var(--card-bg);
             border-color: #ef5350;
         }
 
         .stock-card.dark-red {
-            background: #ffcdd2;
+            background: var(--card-bg);
             border-color: #c62828;
         }
 
         .stock-card.light-green {
-            background: #e8f5e9;
+            background: var(--card-bg);
             border-color: #66bb6a;
         }
 
         .stock-card.dark-green {
-            background: #c8e6c9;
+            background: var(--card-bg);
             border-color: #2e7d32;
         }
 
@@ -102,13 +134,13 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 2px solid var(--input-border);
         }
 
         .stock-name {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #333;
+            color: var(--card-text);
         }
 
         .stock-ticker {
@@ -127,7 +159,7 @@
         .current-price {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #333;
+            color: var(--card-text);
             margin-bottom: 10px;
         }
 
@@ -141,13 +173,13 @@
         }
 
         .price-change.positive {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
         }
 
         .price-change.negative {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
         }
 
         .weekly-indicator {
@@ -159,6 +191,21 @@
             font-weight: 600;
         }
 
+        .weekly-indicator.positive {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .weekly-indicator.negative {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .weekly-indicator.neutral {
+            background: var(--section-bg);
+            color: var(--card-secondary);
+        }
+
         .stock-details {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -167,14 +214,14 @@
         }
 
         .detail-item {
-            background: rgba(255, 255, 255, 0.6);
+            background: var(--section-bg);
             padding: 12px;
             border-radius: 10px;
         }
 
         .detail-label {
             font-size: 0.8rem;
-            color: #6c757d;
+            color: var(--card-secondary);
             margin-bottom: 5px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -183,7 +230,7 @@
         .detail-value {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #333;
+            color: var(--card-text);
         }
 
         .loading {
@@ -288,16 +335,18 @@
         }
 
         .summary-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 15px;
             padding: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 20px var(--shadow-color);
             text-align: center;
+            color: var(--card-text);
+            transition: background-color 0.3s ease;
         }
 
         .summary-label {
             font-size: 0.9rem;
-            color: #6c757d;
+            color: var(--card-secondary);
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -306,7 +355,7 @@
         .summary-value {
             font-size: 2rem;
             font-weight: 700;
-            color: #333;
+            color: var(--card-text);
             margin-bottom: 5px;
         }
 
@@ -331,27 +380,54 @@
         }
 
         .holding-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 15px;
             padding: 20px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+            box-shadow: 0 5px 20px var(--shadow-color);
+            transition: transform 0.3s ease, background-color 0.3s ease;
             border: 3px solid transparent;
+            color: var(--card-text);
         }
 
         .holding-card.positive-gain {
             border-color: #28a745;
-            background: #f0f9f3;
+            background: rgba(40, 167, 69, 0.1);
         }
 
         .holding-card.negative-gain {
             border-color: #dc3545;
-            background: #fef5f5;
+            background: rgba(220, 53, 69, 0.1);
         }
 
         .holding-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .holding-card.history-card {
+            border-color: var(--card-secondary);
+        }
+
+        .history-date {
+            color: var(--card-secondary);
+            font-size: 0.9rem;
+        }
+
+        .history-description {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: var(--section-bg);
+            border-radius: 8px;
+            color: var(--card-text);
+        }
+
+        .error-row {
+            color: #dc3545 !important;
+            font-size: 0.85rem;
+        }
+
+        .error-row span {
+            color: #dc3545 !important;
         }
 
         .holding-header {
@@ -397,12 +473,12 @@
         }
 
         .detail-row span:first-child {
-            color: #6c757d;
+            color: var(--card-secondary);
         }
 
         .detail-row span:last-child {
             font-weight: 600;
-            color: #333;
+            color: var(--card-text);
         }
 
         .value-highlight {
@@ -421,13 +497,13 @@
         }
 
         .holding-pnl.positive {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
         }
 
         .holding-pnl.negative {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
         }
 
         .pnl-amount {
@@ -441,9 +517,9 @@
         .holding-footer {
             margin-top: 10px;
             padding-top: 10px;
-            border-top: 1px solid #f0f0f0;
+            border-top: 1px solid var(--input-border);
             font-size: 0.85rem;
-            color: #6c757d;
+            color: var(--card-secondary);
             display: flex;
             justify-content: space-between;
         }
@@ -479,7 +555,7 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #333;
+            color: var(--card-text);
         }
 
         .form-group input[type="text"],
@@ -488,10 +564,12 @@
         .form-group textarea {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--input-border);
             border-radius: 10px;
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+            background: var(--input-bg);
+            color: var(--card-text);
         }
 
         .form-group input[type="checkbox"] {
@@ -511,7 +589,7 @@
             display: block;
             margin-top: 5px;
             font-size: 0.85rem;
-            color: #6c757d;
+            color: var(--card-secondary);
         }
 
         .form-row {
@@ -521,12 +599,13 @@
         }
 
         .cost-preview {
-            background: #f8f9fa;
+            background: var(--section-bg);
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 20px;
             text-align: center;
             font-size: 1.1rem;
+            color: var(--card-text);
         }
 
         .form-actions {
@@ -555,18 +634,19 @@
         }
 
         .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
+            background: var(--section-bg);
+            color: var(--card-text);
+            border: 1px solid var(--input-border);
         }
 
         .btn-secondary:hover {
-            background: #d0d0d0;
+            background: var(--input-border);
         }
 
         .empty-state {
             text-align: center;
             padding: 50px;
-            color: #6c757d;
+            color: var(--card-secondary);
         }
 
         .empty-state h3 {
@@ -593,7 +673,7 @@
         }
 
         .modal-content {
-            background: white;
+            background: var(--modal-bg);
             border-radius: 20px;
             padding: 30px;
             max-width: 900px;
@@ -602,6 +682,7 @@
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             animation: slideUp 0.3s ease;
+            color: var(--card-text);
         }
 
         .modal-header {
@@ -620,7 +701,7 @@
         }
 
         .modal-header p {
-            color: #6c757d;
+            color: var(--card-secondary);
             margin: 5px 0 0 0;
             font-size: 1rem;
         }
@@ -629,7 +710,7 @@
             background: none;
             border: none;
             font-size: 2.5rem;
-            color: #6c757d;
+            color: var(--card-secondary);
             cursor: pointer;
             line-height: 1;
             transition: color 0.3s ease, transform 0.2s ease;
@@ -652,12 +733,13 @@
             min-width: 100px;
             padding: 12px 20px;
             border: 2px solid #667eea;
-            background: white;
+            background: var(--card-bg);
             color: #667eea;
             border-radius: 10px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
             transition: all 0.3s ease;
         }
 
@@ -716,7 +798,7 @@
 
         .stat-label {
             font-size: 0.85rem;
-            color: #6c757d;
+            color: var(--card-secondary);
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -725,7 +807,7 @@
         .stat-value {
             font-size: 1.3rem;
             font-weight: 700;
-            color: #333;
+            color: var(--card-text);
         }
 
         .stat-value.positive {
@@ -761,6 +843,63 @@
         .chart-loading .spinner {
             border-color: rgba(102, 126, 234, 0.3);
             border-top-color: #667eea;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .theme-toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Section backgrounds */
+        .settings-section {
+            background: var(--section-bg);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .settings-section h3 {
+            color: #667eea;
+        }
+
+        /* Form label colors */
+        .form-group label {
+            color: var(--card-text);
+        }
+
+        /* Modal header colors */
+        .modal-header h2 {
+            color: var(--card-text);
         }
 
         @media (max-width: 768px) {
@@ -850,15 +989,15 @@
         }
 
         .news-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px var(--shadow-color);
             display: flex;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
             cursor: pointer;
             text-decoration: none;
-            color: inherit;
+            color: var(--card-text);
         }
 
         .news-card:hover {
@@ -924,7 +1063,7 @@
         .news-title {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #333;
+            color: var(--card-text);
             margin-bottom: 10px;
             line-height: 1.4;
         }
@@ -933,7 +1072,7 @@
             display: flex;
             gap: 15px;
             font-size: 0.9rem;
-            color: #6c757d;
+            color: var(--card-secondary);
             margin-top: auto;
         }
 
@@ -972,6 +1111,12 @@
     </style>
 </head>
 <body>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+        <span id="themeText">Dark</span>
+    </button>
+
     <div class="container">
         <header>
             <h1>📊 StockPulse</h1>
@@ -1332,8 +1477,8 @@
 
                 <form id="settingsForm" onsubmit="submitSettings(event)">
                     <!-- Email Settings -->
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px; color: #667eea;">📧 Email Notifications</h3>
+                    <div class="settings-section">
+                        <h3 style="margin-bottom: 15px;">📧 Email Notifications</h3>
 
                         <div class="form-group">
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
@@ -1356,8 +1501,8 @@
                     </div>
 
                     <!-- Telegram Settings -->
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px; color: #667eea;">📲 Telegram Notifications</h3>
+                    <div class="settings-section">
+                        <h3 style="margin-bottom: 15px;">📲 Telegram Notifications</h3>
 
                         <div class="form-group">
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
@@ -1388,8 +1533,8 @@
                     </div>
 
                     <!-- Discord Settings -->
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px; color: #667eea;">💬 Discord Notifications</h3>
+                    <div class="settings-section">
+                        <h3 style="margin-bottom: 15px;">💬 Discord Notifications</h3>
 
                         <div class="form-group">
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
@@ -1429,6 +1574,38 @@
     </div>
 
     <script>
+        // Theme Toggle Functions
+        function initTheme() {
+            const savedTheme = localStorage.getItem('stockpulse-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButton(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('stockpulse-theme', newTheme);
+            updateThemeButton(newTheme);
+        }
+
+        function updateThemeButton(theme) {
+            const icon = document.getElementById('themeIcon');
+            const text = document.getElementById('themeText');
+
+            if (theme === 'dark') {
+                icon.textContent = '☀️';
+                text.textContent = 'Light';
+            } else {
+                icon.textContent = '🌙';
+                text.textContent = 'Dark';
+            }
+        }
+
+        // Initialize theme on page load
+        initTheme();
+
         function formatNumber(num) {
             if (num === 'N/A') return 'N/A';
             return num.toLocaleString('en-US', {
@@ -1467,19 +1644,19 @@
                         
                         if (stock.weekly_change <= -3) {
                             cardColorClass = 'dark-red';
-                            weeklyText = '<span class="weekly-indicator" style="background: #ffcdd2; color: #c62828;">Week: ' + stock.weekly_change + '%</span>';
+                            weeklyText = '<span class="weekly-indicator negative">Week: ' + stock.weekly_change + '%</span>';
                         } else if (stock.weekly_change >= 3) {
                             cardColorClass = 'dark-green';
-                            weeklyText = '<span class="weekly-indicator" style="background: #c8e6c9; color: #2e7d32;">Week: +' + stock.weekly_change + '%</span>';
+                            weeklyText = '<span class="weekly-indicator positive">Week: +' + stock.weekly_change + '%</span>';
                         } else if (stock.change_percent <= -1) {
                             cardColorClass = 'light-red';
-                            weeklyText = '<span class="weekly-indicator" style="background: #ffebee; color: #ef5350;">Week: ' + stock.weekly_change + '%</span>';
+                            weeklyText = '<span class="weekly-indicator negative">Week: ' + stock.weekly_change + '%</span>';
                         } else if (stock.change_percent >= 1) {
                             cardColorClass = 'light-green';
-                            weeklyText = '<span class="weekly-indicator" style="background: #e8f5e9; color: #66bb6a;">Week: +' + stock.weekly_change + '%</span>';
+                            weeklyText = '<span class="weekly-indicator positive">Week: +' + stock.weekly_change + '%</span>';
                         } else {
                             const weekSign = stock.weekly_change >= 0 ? '+' : '';
-                            weeklyText = '<span class="weekly-indicator" style="background: #f0f0f0; color: #666;">Week: ' + weekSign + stock.weekly_change + '%</span>';
+                            weeklyText = '<span class="weekly-indicator neutral">Week: ' + weekSign + stock.weekly_change + '%</span>';
                         }
                         
                         const card = '<div class="stock-card ' + cardColorClass + '" style="animation-delay: ' + (index * 0.1) + 's; cursor: pointer;" onclick="openChartModal(\'' + stock.ticker + '\', \'' + stock.name + '\')">' +
@@ -2446,15 +2623,15 @@
             }
 
             return `
-                <div class="holding-card" style="border-color: #6c757d;">
+                <div class="holding-card history-card">
                     <div class="holding-header">
                         <span class="holding-ticker">${item.ticker}</span>
-                        <span style="color: #6c757d; font-size: 0.9rem;">
+                        <span class="history-date">
                             ${new Date(item.triggered_at).toLocaleString()}
                         </span>
                     </div>
                     <div class="holding-details">
-                        <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                        <div class="history-description">
                             ${description}
                         </div>
                         <div class="detail-row">
@@ -2466,9 +2643,9 @@
                         <div class="detail-row">
                             <span>${discordStatus}</span>
                         </div>
-                        ${item.email_error ? `<div class="detail-row" style="color: #dc3545; font-size: 0.85rem;"><span>Error: ${item.email_error}</span></div>` : ''}
-                        ${item.telegram_error ? `<div class="detail-row" style="color: #dc3545; font-size: 0.85rem;"><span>Error: ${item.telegram_error}</span></div>` : ''}
-                        ${item.discord_error ? `<div class="detail-row" style="color: #dc3545; font-size: 0.85rem;"><span>Error: ${item.discord_error}</span></div>` : ''}
+                        ${item.email_error ? `<div class="detail-row error-row"><span>Error: ${item.email_error}</span></div>` : ''}
+                        ${item.telegram_error ? `<div class="detail-row error-row"><span>Error: ${item.telegram_error}</span></div>` : ''}
+                        ${item.discord_error ? `<div class="detail-row error-row"><span>Error: ${item.discord_error}</span></div>` : ''}
                     </div>
                 </div>
             `;
