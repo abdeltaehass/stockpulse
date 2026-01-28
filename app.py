@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify, request
 from stock_data import StockData
 from portfolio import Portfolio
+from predictor import StockPredictor
 from database import init_db, get_db_connection
 from scheduler import start_scheduler
 from notifications import send_email_notification, send_telegram_notification, send_discord_notification
@@ -96,6 +97,18 @@ def search_stock():
                 'message': f'No stock found for "{query}"'
             })
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/stocks/<ticker>/prediction')
+def get_stock_prediction(ticker):
+    try:
+        predictor = StockPredictor(ticker.upper())
+        prediction = predictor.get_prediction()
+        return jsonify({
+            'prediction': prediction,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

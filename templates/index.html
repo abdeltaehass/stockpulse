@@ -1310,6 +1310,235 @@
                 width: 100%;
             }
         }
+        .prediction-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 3px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .prediction-header h3 {
+            color: #667eea;
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .prediction-load-btn {
+            padding: 10px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .prediction-load-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .prediction-loading {
+            text-align: center;
+            padding: 30px;
+            color: var(--card-secondary);
+        }
+
+        .prediction-recommendation {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: var(--section-bg, #f8f9fa);
+            border-radius: 15px;
+        }
+
+        .recommendation-badge {
+            font-size: 1.8rem;
+            font-weight: 800;
+            padding: 12px 30px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .recommendation-badge.buy {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 2px solid #28a745;
+        }
+
+        .recommendation-badge.hold {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 2px solid #ffc107;
+        }
+
+        .recommendation-badge.sell {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 2px solid #dc3545;
+        }
+
+        .confidence-section {
+            flex: 1;
+        }
+
+        .confidence-label {
+            font-size: 0.85rem;
+            color: var(--card-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .confidence-bar-container {
+            width: 100%;
+            height: 12px;
+            background: var(--input-border, #e0e0e0);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .confidence-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 1s ease-out;
+            background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%);
+        }
+
+        .confidence-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--card-text);
+            margin-top: 5px;
+        }
+
+        .prediction-summary {
+            padding: 15px;
+            background: var(--section-bg, #f8f9fa);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            color: var(--card-text);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .signal-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .signal-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: var(--section-bg, #f8f9fa);
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+
+        .signal-card.bullish { border-left-color: #28a745; }
+        .signal-card.bearish { border-left-color: #dc3545; }
+        .signal-card.neutral { border-left-color: #6c757d; }
+
+        .signal-info { flex: 1; }
+
+        .signal-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--card-text);
+        }
+
+        .signal-detail {
+            font-size: 0.78rem;
+            color: var(--card-secondary);
+            margin-top: 2px;
+        }
+
+        .signal-value {
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        .signal-value.bullish {
+            background: rgba(40, 167, 69, 0.15);
+            color: #28a745;
+        }
+
+        .signal-value.bearish {
+            background: rgba(220, 53, 69, 0.15);
+            color: #dc3545;
+        }
+
+        .signal-value.neutral-val {
+            background: var(--input-border, #e0e0e0);
+            color: var(--card-secondary);
+        }
+
+        .pattern-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .pattern-chart-container {
+            background: var(--section-bg, #f8f9fa);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .pattern-chart-container h4 {
+            color: var(--card-text);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .pattern-chart-container canvas {
+            max-height: 180px;
+        }
+
+        .prediction-disclaimer {
+            font-size: 0.75rem;
+            color: var(--card-secondary);
+            text-align: center;
+            font-style: italic;
+            padding: 10px;
+            border-top: 1px solid var(--input-border, #e0e0e0);
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .prediction-recommendation {
+                flex-direction: column;
+                text-align: center;
+            }
+            .pattern-charts {
+                grid-template-columns: 1fr;
+            }
+            .signal-breakdown {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1616,6 +1845,51 @@
                 <div class="chart-loading">
                     <div class="spinner"></div>
                     <p>Loading chart data...</p>
+                </div>
+
+                <!-- Prediction Section -->
+                <div id="predictionSection" class="prediction-section">
+                    <div class="prediction-header">
+                        <h3>Prediction & Analysis</h3>
+                        <button class="prediction-load-btn" id="predictionLoadBtn" onclick="loadPrediction()">
+                            Analyze Stock
+                        </button>
+                    </div>
+
+                    <div id="predictionLoading" class="prediction-loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Running analysis... This may take a few seconds.</p>
+                    </div>
+
+                    <div id="predictionContent" style="display: none;">
+                        <div class="prediction-recommendation">
+                            <div class="recommendation-badge" id="recommendationBadge">Hold</div>
+                            <div class="confidence-section">
+                                <div class="confidence-label">Confidence</div>
+                                <div class="confidence-bar-container">
+                                    <div class="confidence-bar" id="confidenceBar" style="width: 0%"></div>
+                                </div>
+                                <div class="confidence-value" id="confidenceValue">0%</div>
+                            </div>
+                        </div>
+
+                        <div class="prediction-summary" id="predictionSummary"></div>
+
+                        <div class="signal-breakdown" id="signalBreakdown"></div>
+
+                        <div class="pattern-charts">
+                            <div class="pattern-chart-container">
+                                <h4>Day-of-Week Returns</h4>
+                                <canvas id="weekdayChart"></canvas>
+                            </div>
+                            <div class="pattern-chart-container">
+                                <h4>Monthly Seasonal Returns</h4>
+                                <canvas id="seasonalChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="prediction-disclaimer" id="predictionDisclaimer"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1962,6 +2236,15 @@
             document.getElementById('modalStockName').textContent = stockName;
             document.getElementById('chartModal').classList.add('active');
 
+            // Reset prediction state
+            document.getElementById('predictionLoading').style.display = 'none';
+            document.getElementById('predictionContent').style.display = 'none';
+            const predBtn = document.getElementById('predictionLoadBtn');
+            if (predBtn) {
+                predBtn.textContent = 'Analyze Stock';
+                predBtn.disabled = false;
+            }
+
             loadChartData('1mo');
         }
 
@@ -1976,6 +2259,14 @@
             if (currentVolumeChart) {
                 currentVolumeChart.destroy();
                 currentVolumeChart = null;
+            }
+            if (weekdayChartInstance) {
+                weekdayChartInstance.destroy();
+                weekdayChartInstance = null;
+            }
+            if (seasonalChartInstance) {
+                seasonalChartInstance.destroy();
+                seasonalChartInstance = null;
             }
         }
 
@@ -2924,6 +3215,216 @@
                 closeNotificationSettingsModal();
             }
         });
+
+        // ============ PREDICTION FUNCTIONS ============
+
+        let weekdayChartInstance = null;
+        let seasonalChartInstance = null;
+
+        function loadPrediction() {
+            if (!currentTicker) return;
+
+            document.getElementById('predictionLoading').style.display = 'block';
+            document.getElementById('predictionContent').style.display = 'none';
+
+            const btn = document.getElementById('predictionLoadBtn');
+            btn.textContent = 'Analyzing...';
+            btn.disabled = true;
+
+            fetch(`/api/stocks/${currentTicker}/prediction`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    document.getElementById('predictionLoading').style.display = 'none';
+                    document.getElementById('predictionContent').style.display = 'block';
+
+                    renderPrediction(data.prediction);
+
+                    btn.textContent = 'Refresh Analysis';
+                    btn.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Prediction error:', error);
+                    document.getElementById('predictionLoading').innerHTML =
+                        `<p style="color: #dc3545;">Error loading prediction. Please try again.</p>`;
+                    btn.textContent = 'Retry Analysis';
+                    btn.disabled = false;
+                });
+        }
+
+        function renderPrediction(prediction) {
+            const badge = document.getElementById('recommendationBadge');
+            badge.textContent = prediction.recommendation;
+            badge.className = 'recommendation-badge ' + prediction.recommendation.toLowerCase();
+
+            const bar = document.getElementById('confidenceBar');
+            const confValue = document.getElementById('confidenceValue');
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = prediction.confidence + '%';
+            }, 100);
+            confValue.textContent = prediction.confidence + '%';
+
+            document.getElementById('predictionSummary').textContent = prediction.summary;
+
+            const breakdownContainer = document.getElementById('signalBreakdown');
+            const breakdown = prediction.signal_breakdown;
+            let breakdownHTML = '';
+
+            for (const [key, sig] of Object.entries(breakdown)) {
+                const signalClass = sig.signal > 0.15 ? 'bullish' : (sig.signal < -0.15 ? 'bearish' : 'neutral');
+                const valueClass = sig.signal > 0.15 ? 'bullish' : (sig.signal < -0.15 ? 'bearish' : 'neutral-val');
+
+                breakdownHTML += `
+                    <div class="signal-card ${signalClass}">
+                        <div class="signal-info">
+                            <div class="signal-name">${sig.name}</div>
+                            <div class="signal-detail">${sig.detail}</div>
+                        </div>
+                        <div class="signal-value ${valueClass}">${sig.label}</div>
+                    </div>
+                `;
+            }
+            breakdownContainer.innerHTML = breakdownHTML;
+
+            renderWeekdayChart(prediction.weekday_analysis);
+            renderSeasonalChart(prediction.seasonal_analysis);
+
+            document.getElementById('predictionDisclaimer').textContent = prediction.disclaimer;
+        }
+
+        function renderWeekdayChart(weekdayData) {
+            if (weekdayChartInstance) {
+                weekdayChartInstance.destroy();
+            }
+
+            const stats = weekdayData.weekday_stats;
+            const labels = [];
+            const values = [];
+            const colors = [];
+
+            for (let d = 0; d < 5; d++) {
+                if (stats[d]) {
+                    labels.push(stats[d].name);
+                    values.push(stats[d].pct_positive);
+                    if (d === weekdayData.today_weekday) {
+                        colors.push('#667eea');
+                    } else {
+                        colors.push(stats[d].pct_positive >= 50 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)');
+                    }
+                }
+            }
+
+            const ctx = document.getElementById('weekdayChart').getContext('2d');
+            weekdayChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '% Days Positive',
+                        data: values,
+                        backgroundColor: colors,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) { return ctx.parsed.y.toFixed(1) + '% positive days'; }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 30,
+                            max: 70,
+                            ticks: {
+                                callback: function(v) { return v + '%'; },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--card-secondary') || '#6c757d'
+                            },
+                            grid: { color: 'rgba(128,128,128,0.1)' }
+                        },
+                        x: {
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--card-secondary') || '#6c757d'
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderSeasonalChart(seasonalData) {
+            if (seasonalChartInstance) {
+                seasonalChartInstance.destroy();
+            }
+
+            const stats = seasonalData.monthly_stats;
+            const labels = [];
+            const values = [];
+            const colors = [];
+
+            for (let m = 1; m <= 12; m++) {
+                if (stats[m]) {
+                    labels.push(stats[m].name);
+                    values.push(stats[m].avg_return);
+                    if (m === seasonalData.current_month) {
+                        colors.push('#667eea');
+                    } else {
+                        colors.push(stats[m].avg_return >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)');
+                    }
+                }
+            }
+
+            const ctx = document.getElementById('seasonalChart').getContext('2d');
+            seasonalChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg Monthly Return %',
+                        data: values,
+                        backgroundColor: colors,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) { return (ctx.parsed.y >= 0 ? '+' : '') + ctx.parsed.y.toFixed(2) + '% avg return'; }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(v) { return (v >= 0 ? '+' : '') + v + '%'; },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--card-secondary') || '#6c757d'
+                            },
+                            grid: { color: 'rgba(128,128,128,0.1)' }
+                        },
+                        x: {
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--card-secondary') || '#6c757d'
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
 
         // ============ ALERTS MANAGEMENT ============
 
