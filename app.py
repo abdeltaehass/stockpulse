@@ -15,7 +15,11 @@ init_db()
 # Start background scheduler for price alerts
 start_scheduler()
 
-WATCHLIST = ['AAPL', 'MSFT', 'MA', 'GLD', 'AMZN', 'GOOGL', 'SPY', 'TSM', 'NVDA']
+def get_watchlist():
+    """Read watchlist tickers from the database"""
+    with get_db_connection() as conn:
+        cursor = conn.execute('SELECT ticker FROM watchlist ORDER BY added_at')
+        return [row['ticker'] for row in cursor.fetchall()]
 
 @app.route('/')
 def index():
@@ -25,7 +29,7 @@ def index():
 def get_stocks():
     stocks_data = []
 
-    for ticker in WATCHLIST:
+    for ticker in get_watchlist():
         stock = StockData(ticker)
         info = stock.get_stock_info()
         if info:
@@ -189,7 +193,7 @@ def get_news():
         if ticker:
             tickers = [ticker.upper()]
         else:
-            tickers = WATCHLIST
+            tickers = get_watchlist()
 
         for t in tickers:
             stock = StockData(t)
@@ -518,6 +522,65 @@ def get_alert_history():
             'history': history,
             'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ============ WATCHLIST API ============
+
+@app.route('/api/watchlist', methods=['GET'])
+def get_watchlist_api():
+    """Get all watchlist tickers"""
+    try:
+        tickers = get_watchlist()
+        return jsonify({'watchlist': tickers})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/watchlist', methods=['POST'])
+def add_to_watchlist():
+    """Add a stock to the watchlist"""
+    try:
+        data = request.get_json()
+        ticker = data.get('ticker', '').strip().upper()
+
+        if not ticker:
+            return jsonify({'error': 'Ticker is required'}), 400
+
+        # Check if already in watchlist
+        with get_db_connection() as conn:
+            cursor = conn.execute('SELECT id FROM watchlist WHERE ticker = ?', (ticker,))
+            if cursor.fetchone():
+                return jsonify({'error': f'{ticker} is already in your watchlist'}), 409
+
+        # Validate ticker by fetching price
+        stock = StockData(ticker)
+        price = stock.get_current_price()
+        if price is None:
+            return jsonify({'error': f'Invalid ticker: {ticker}'}), 400
+
+        with get_db_connection() as conn:
+            conn.execute('INSERT INTO watchlist (ticker) VALUES (?)', (ticker,))
+
+        return jsonify({'success': True, 'message': f'{ticker} added to watchlist'}), 201
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/watchlist/<ticker>', methods=['DELETE'])
+def remove_from_watchlist(ticker):
+    """Remove a stock from the watchlist"""
+    try:
+        ticker = ticker.upper()
+
+        with get_db_connection() as conn:
+            cursor = conn.execute('SELECT id FROM watchlist WHERE ticker = ?', (ticker,))
+            if not cursor.fetchone():
+                return jsonify({'error': f'{ticker} is not in your watchlist'}), 404
+
+            conn.execute('DELETE FROM watchlist WHERE ticker = ?', (ticker,))
+
+        return jsonify({'success': True, 'message': f'{ticker} removed from watchlist'})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

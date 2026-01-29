@@ -152,6 +152,79 @@
             font-size: 0.9rem;
         }
 
+        .watchlist-remove-btn {
+            background: none;
+            border: 2px solid var(--input-border);
+            color: var(--card-text);
+            opacity: 0.4;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .watchlist-remove-btn:hover {
+            opacity: 1;
+            background: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+
+        .watchlist-add-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .watchlist-add-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .watchlist-add-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .mover-add-btn {
+            background: none;
+            border: 2px solid var(--input-border);
+            color: var(--card-text);
+            opacity: 0.5;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .mover-add-btn:hover {
+            opacity: 1;
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+
         .price-section {
             margin-bottom: 20px;
         }
@@ -2202,7 +2275,10 @@
                         const card = '<div class="stock-card ' + cardColorClass + '" style="animation-delay: ' + (index * 0.1) + 's; cursor: pointer;" onclick="openChartModal(\'' + stock.ticker + '\', \'' + stock.name + '\')">' +
                             '<div class="stock-header">' +
                                 '<span class="stock-name">' + stock.name + '</span>' +
-                                '<span class="stock-ticker">' + stock.ticker + '</span>' +
+                                '<div style="display: flex; align-items: center; gap: 8px;">' +
+                                    '<span class="stock-ticker">' + stock.ticker + '</span>' +
+                                    '<button class="watchlist-remove-btn" onclick="removeFromWatchlist(\'' + stock.ticker + '\', event)" title="Remove from watchlist">&times;</button>' +
+                                '</div>' +
                             '</div>' +
                             '<div class="price-section">' +
                                 '<div class="current-price">$' + formatNumber(stock.current_price) + '</div>' +
@@ -2247,6 +2323,51 @@
 
         loadStocks();
         setInterval(loadStocks, 60000);
+
+        function addToWatchlist(ticker, event) {
+            if (event) event.stopPropagation();
+
+            fetch('/api/watchlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticker: ticker })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    loadStocks();
+                } else {
+                    alert(data.error || 'Failed to add stock');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding to watchlist:', error);
+                alert('Error adding stock to watchlist.');
+            });
+        }
+
+        function removeFromWatchlist(ticker, event) {
+            if (event) event.stopPropagation();
+
+            if (!confirm('Remove ' + ticker + ' from your watchlist?')) return;
+
+            fetch('/api/watchlist/' + ticker, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadStocks();
+                } else {
+                    alert(data.error || 'Failed to remove stock');
+                }
+            })
+            .catch(error => {
+                console.error('Error removing from watchlist:', error);
+                alert('Error removing stock from watchlist.');
+            });
+        }
 
         // Chart Modal Functions
         let currentChart = null;
@@ -2857,6 +2978,7 @@
                             <div class="mover-current">$${formatNumber(stock.current_price)}</div>
                             <div class="mover-change ${changeClass}">${changeSign}${stock.change_percent}%</div>
                         </div>
+                        <button class="mover-add-btn" onclick="addToWatchlist('${stock.ticker}', event)" title="Add to watchlist">+</button>
                     </div>
                 `;
             }).join('');
@@ -2962,6 +3084,11 @@
                             <div class="detail-value">$${formatNumber(stock.day_low)}</div>
                         </div>
                     </div>
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button class="watchlist-add-btn" onclick="addToWatchlist('${stock.ticker}')">
+                        + Add to Watchlist
+                    </button>
                 </div>
             `;
         }

@@ -99,3 +99,19 @@ def init_db():
             conn.execute("ALTER TABLE notification_settings ADD COLUMN daily_report_time TEXT DEFAULT '08:00'")
         except:
             pass
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS watchlist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticker VARCHAR(10) NOT NULL UNIQUE,
+                added_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Seed default watchlist if empty
+        cursor = conn.execute('SELECT COUNT(*) FROM watchlist')
+        count = cursor.fetchone()[0]
+        if count == 0:
+            defaults = ['AAPL', 'MSFT', 'MA', 'GLD', 'AMZN', 'GOOGL', 'SPY', 'TSM', 'NVDA']
+            for ticker in defaults:
+                conn.execute('INSERT INTO watchlist (ticker) VALUES (?)', (ticker,))

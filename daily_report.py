@@ -11,9 +11,6 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-WATCHLIST = ['AAPL', 'MSFT', 'MA', 'GLD', 'AMZN', 'GOOGL', 'SPY', 'TSM', 'NVDA']
-
-
 def generate_daily_report():
     """Analyze all watchlist stocks and send daily report via all channels"""
     try:
@@ -33,8 +30,17 @@ def generate_daily_report():
             logger.info("All notification channels disabled, skipping daily report")
             return
 
+        # Read watchlist from database
+        with get_db_connection() as conn:
+            cursor = conn.execute('SELECT ticker FROM watchlist ORDER BY added_at')
+            watchlist = [row['ticker'] for row in cursor.fetchall()]
+
+        if not watchlist:
+            logger.info("Watchlist is empty, skipping daily report")
+            return
+
         analyses = []
-        for ticker in WATCHLIST:
+        for ticker in watchlist:
             try:
                 predictor = StockPredictor(ticker)
                 prediction = predictor.get_prediction()
