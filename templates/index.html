@@ -2358,6 +2358,37 @@
                         </button>
                     </div>
 
+                    <!-- Flash Crash Detection -->
+                    <div class="settings-section">
+                        <h3 style="margin-bottom: 15px;">⚠️ Flash Crash Detection</h3>
+                        <p style="font-size: 13px; color: var(--card-text); opacity: 0.7; margin-bottom: 15px;">
+                            Get instant alerts when the stock or crypto market experiences a rapid price drop.
+                            Monitors SPY, QQQ, DIA for stocks and BTC, ETH, SOL for crypto every 2 minutes.
+                        </p>
+
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="settingsCrashDetectionEnabled">
+                                <span>Enable flash crash detection</span>
+                            </label>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Stock Crash Threshold (%)</label>
+                                <input type="number" id="settingsCrashStockThreshold" value="3.0"
+                                       min="1" max="20" step="0.5">
+                                <small>Drop from intraday high to trigger (default 3%)</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Crypto Crash Threshold (%)</label>
+                                <input type="number" id="settingsCrashCryptoThreshold" value="5.0"
+                                       min="1" max="30" step="0.5">
+                                <small>Drop from intraday high to trigger (default 5%)</small>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-actions">
                         <button type="button" class="btn-secondary"
                                 onclick="closeNotificationSettingsModal()">
@@ -4150,6 +4181,9 @@
                     document.getElementById('settingsDiscordWebhookUrl').value = data.discord_webhook_url || '';
                     document.getElementById('settingsDailyReportEnabled').checked = data.daily_report_enabled === 1;
                     document.getElementById('settingsDailyReportTime').value = data.daily_report_time || '08:00';
+                    document.getElementById('settingsCrashDetectionEnabled').checked = data.crash_detection_enabled === 1;
+                    document.getElementById('settingsCrashStockThreshold').value = data.crash_stock_threshold || 3.0;
+                    document.getElementById('settingsCrashCryptoThreshold').value = data.crash_crypto_threshold || 5.0;
                 })
                 .catch(error => {
                     console.error('Error loading settings:', error);
@@ -4168,7 +4202,10 @@
                 discord_enabled: document.getElementById('settingsDiscordEnabled').checked ? 1 : 0,
                 discord_webhook_url: document.getElementById('settingsDiscordWebhookUrl').value,
                 daily_report_enabled: document.getElementById('settingsDailyReportEnabled').checked ? 1 : 0,
-                daily_report_time: document.getElementById('settingsDailyReportTime').value || '08:00'
+                daily_report_time: document.getElementById('settingsDailyReportTime').value || '08:00',
+                crash_detection_enabled: document.getElementById('settingsCrashDetectionEnabled').checked ? 1 : 0,
+                crash_stock_threshold: parseFloat(document.getElementById('settingsCrashStockThreshold').value) || 3.0,
+                crash_crypto_threshold: parseFloat(document.getElementById('settingsCrashCryptoThreshold').value) || 5.0
             };
 
             fetch('/api/notifications/settings', {

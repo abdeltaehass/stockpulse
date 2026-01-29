@@ -29,6 +29,9 @@ def start_scheduler():
     # Schedule daily report if enabled
     _schedule_daily_report()
 
+    # Schedule flash crash detection
+    _schedule_crash_monitor()
+
     scheduler.start()
     logger.info(f"Scheduler started. Will check alerts every {Config.ALERT_CHECK_INTERVAL} minutes")
 
@@ -100,3 +103,19 @@ def reschedule_daily_report():
     """Called when the user updates daily report time in settings"""
     _schedule_daily_report()
     logger.info("Daily report rescheduled with updated settings")
+
+
+def _schedule_crash_monitor():
+    """Schedule the flash crash detection job"""
+    from crash_monitor import check_for_crashes
+
+    scheduler.add_job(
+        func=check_for_crashes,
+        trigger=IntervalTrigger(minutes=Config.CRASH_CHECK_INTERVAL),
+        id='flash_crash_monitor',
+        name='Flash crash detection',
+        replace_existing=True,
+        max_instances=1
+    )
+
+    logger.info(f"Flash crash monitor scheduled every {Config.CRASH_CHECK_INTERVAL} minutes")

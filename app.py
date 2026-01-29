@@ -695,7 +695,8 @@ def get_notification_settings():
             cursor = conn.execute('''
                 SELECT email_enabled, email_address, telegram_enabled,
                        telegram_chat_id, telegram_bot_token, discord_enabled, discord_webhook_url,
-                       daily_report_enabled, daily_report_time
+                       daily_report_enabled, daily_report_time,
+                       crash_detection_enabled, crash_stock_threshold, crash_crypto_threshold
                 FROM notification_settings
                 WHERE id = 1
             ''')
@@ -713,7 +714,10 @@ def get_notification_settings():
                     'discord_enabled': 0,
                     'discord_webhook_url': '',
                     'daily_report_enabled': 0,
-                    'daily_report_time': '08:00'
+                    'daily_report_time': '08:00',
+                    'crash_detection_enabled': 0,
+                    'crash_stock_threshold': 3.0,
+                    'crash_crypto_threshold': 5.0
                 })
 
     except Exception as e:
@@ -737,6 +741,7 @@ def update_notification_settings():
                         telegram_enabled = ?, telegram_chat_id = ?, telegram_bot_token = ?,
                         discord_enabled = ?, discord_webhook_url = ?,
                         daily_report_enabled = ?, daily_report_time = ?,
+                        crash_detection_enabled = ?, crash_stock_threshold = ?, crash_crypto_threshold = ?,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = 1
                 ''', (
@@ -748,15 +753,19 @@ def update_notification_settings():
                     data.get('discord_enabled', 0),
                     data.get('discord_webhook_url', ''),
                     data.get('daily_report_enabled', 0),
-                    data.get('daily_report_time', '08:00')
+                    data.get('daily_report_time', '08:00'),
+                    data.get('crash_detection_enabled', 0),
+                    data.get('crash_stock_threshold', 3.0),
+                    data.get('crash_crypto_threshold', 5.0)
                 ))
             else:
                 conn.execute('''
                     INSERT INTO notification_settings
                     (id, email_enabled, email_address, telegram_enabled, telegram_chat_id,
                      telegram_bot_token, discord_enabled, discord_webhook_url,
-                     daily_report_enabled, daily_report_time)
-                    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     daily_report_enabled, daily_report_time,
+                     crash_detection_enabled, crash_stock_threshold, crash_crypto_threshold)
+                    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     data.get('email_enabled', 0),
                     data.get('email_address', ''),
@@ -766,7 +775,10 @@ def update_notification_settings():
                     data.get('discord_enabled', 0),
                     data.get('discord_webhook_url', ''),
                     data.get('daily_report_enabled', 0),
-                    data.get('daily_report_time', '08:00')
+                    data.get('daily_report_time', '08:00'),
+                    data.get('crash_detection_enabled', 0),
+                    data.get('crash_stock_threshold', 3.0),
+                    data.get('crash_crypto_threshold', 5.0)
                 ))
 
         try:

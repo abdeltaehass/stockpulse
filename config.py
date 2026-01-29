@@ -33,3 +33,9 @@ class Config:
 
     # Daily report settings
     DAILY_REPORT_DEFAULT_TIME = os.getenv('DAILY_REPORT_TIME', '08:00')
+
+    # Flash crash detection settings
+    CRASH_CHECK_INTERVAL = int(os.getenv('CRASH_CHECK_INTERVAL', '2'))
+    CRASH_STOCK_THRESHOLD = float(os.getenv('CRASH_STOCK_THRESHOLD', '3.0'))
+    CRASH_CRYPTO_THRESHOLD = float(os.getenv('CRASH_CRYPTO_THRESHOLD', '5.0'))
+    CRASH_COOLDOWN_MINUTES = int(os.getenv('CRASH_COOLDOWN_MINUTES', '30'))

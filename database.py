@@ -85,6 +85,9 @@ def init_db():
                 discord_webhook_url TEXT,
                 daily_report_enabled INTEGER DEFAULT 0,
                 daily_report_time TEXT DEFAULT '08:00',
+                crash_detection_enabled INTEGER DEFAULT 0,
+                crash_stock_threshold REAL DEFAULT 3.0,
+                crash_crypto_threshold REAL DEFAULT 5.0,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
@@ -97,6 +100,19 @@ def init_db():
             pass
         try:
             conn.execute("ALTER TABLE notification_settings ADD COLUMN daily_report_time TEXT DEFAULT '08:00'")
+        except:
+            pass
+
+        try:
+            conn.execute('ALTER TABLE notification_settings ADD COLUMN crash_detection_enabled INTEGER DEFAULT 0')
+        except:
+            pass
+        try:
+            conn.execute('ALTER TABLE notification_settings ADD COLUMN crash_stock_threshold REAL DEFAULT 3.0')
+        except:
+            pass
+        try:
+            conn.execute('ALTER TABLE notification_settings ADD COLUMN crash_crypto_threshold REAL DEFAULT 5.0')
         except:
             pass
 
