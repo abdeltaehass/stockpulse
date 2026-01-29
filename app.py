@@ -21,6 +21,13 @@ def get_watchlist():
         cursor = conn.execute('SELECT ticker FROM watchlist ORDER BY added_at')
         return [row['ticker'] for row in cursor.fetchall()]
 
+TOP_CRYPTO_TICKERS = [
+    'BTC-USD', 'ETH-USD', 'BNB-USD', 'SOL-USD', 'XRP-USD',
+    'ADA-USD', 'DOGE-USD', 'AVAX-USD', 'DOT-USD', 'MATIC-USD',
+    'LINK-USD', 'SHIB-USD', 'LTC-USD', 'UNI-USD', 'ATOM-USD',
+    'XLM-USD', 'ALGO-USD', 'NEAR-USD', 'FTM-USD', 'AAVE-USD'
+]
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -581,6 +588,101 @@ def remove_from_watchlist(ticker):
             conn.execute('DELETE FROM watchlist WHERE ticker = ?', (ticker,))
 
         return jsonify({'success': True, 'message': f'{ticker} removed from watchlist'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ============ CRYPTO API ============
+
+@app.route('/api/crypto/market')
+def get_crypto_market():
+    """Get market data for top cryptocurrencies"""
+    try:
+        crypto_data = []
+        for ticker in TOP_CRYPTO_TICKERS:
+            try:
+                stock = StockData(ticker)
+                info = stock.get_crypto_info()
+                if info and info.get('current_price'):
+                    crypto_data.append(info)
+            except:
+                continue
+
+        crypto_data.sort(
+            key=lambda x: x.get('market_cap') or 0,
+            reverse=True
+        )
+
+        return jsonify({
+            'cryptos': crypto_data,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/crypto/news')
+def get_crypto_news():
+    """Get news for top cryptocurrencies"""
+    try:
+        ticker = request.args.get('ticker', None)
+        limit = request.args.get('limit', 5, type=int)
+        sentiment_filter = request.args.get('sentiment', None)
+
+        all_news = []
+
+        if ticker:
+            tickers = [ticker.upper()]
+        else:
+            tickers = TOP_CRYPTO_TICKERS[:5]
+
+        for t in tickers:
+            stock = StockData(t)
+            news = stock.get_news(limit=limit)
+            for article in news:
+                article['ticker'] = t.replace('-USD', '')
+            all_news.extend(news)
+
+        all_news.sort(key=lambda x: x['published'], reverse=True)
+
+        if sentiment_filter and sentiment_filter in ['positive', 'negative', 'neutral']:
+            all_news = [n for n in all_news if n['sentiment'] == sentiment_filter]
+
+        return jsonify({
+            'news': all_news,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/crypto/search')
+def search_crypto():
+    """Search for a cryptocurrency by ticker"""
+    try:
+        query = request.args.get('q', '').strip().upper()
+        if not query:
+            return jsonify({'error': 'Search query required'}), 400
+
+        if not query.endswith('-USD'):
+            ticker = query + '-USD'
+        else:
+            ticker = query
+
+        stock = StockData(ticker)
+        info = stock.get_crypto_info()
+
+        if info and info.get('current_price'):
+            return jsonify({
+                'found': True,
+                'crypto': info,
+                'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+        else:
+            return jsonify({
+                'found': False,
+                'message': f'No cryptocurrency found for "{query}"'
+            })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

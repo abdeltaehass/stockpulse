@@ -601,6 +601,135 @@
             color: #dc3545;
         }
 
+        /* Crypto Card Styles */
+        .crypto-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 18px;
+            box-shadow: 0 5px 20px var(--shadow-color);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .crypto-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .crypto-rank {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f7931a;
+            min-width: 30px;
+        }
+
+        .crypto-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .crypto-symbol {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--card-text);
+        }
+
+        .crypto-name {
+            font-size: 0.85rem;
+            color: var(--card-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .crypto-stats {
+            text-align: right;
+            min-width: 120px;
+        }
+
+        .crypto-price {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--card-text);
+        }
+
+        .crypto-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .crypto-change.positive {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .crypto-change.negative {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .crypto-meta {
+            text-align: right;
+            min-width: 100px;
+        }
+
+        .crypto-mcap, .crypto-vol {
+            font-size: 0.8rem;
+            color: var(--card-secondary);
+        }
+
+        .crypto-mcap span, .crypto-vol span {
+            font-weight: 600;
+            color: var(--card-text);
+        }
+
+        .crypto-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .crypto-action-btn {
+            background: none;
+            border: 2px solid var(--input-border);
+            color: var(--card-text);
+            opacity: 0.5;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .crypto-action-btn:hover {
+            opacity: 1;
+        }
+
+        .crypto-action-btn.watchlist-action:hover {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+
+        .crypto-action-btn.alert-action:hover {
+            background: #f7931a;
+            border-color: #f7931a;
+            color: white;
+        }
+
         /* Portfolio Summary Cards */
         .portfolio-summary {
             display: grid;
@@ -1634,6 +1763,7 @@
             <button class="tab-btn" data-tab="discover">🔍 Discover</button>
             <button class="tab-btn" data-tab="alerts">🔔 Alerts</button>
             <button class="tab-btn" data-tab="news">📰 News</button>
+            <button class="tab-btn" data-tab="crypto">&#8383; Crypto</button>
         </div>
 
         <!-- My Stocks Tab (Merged Watchlist + Portfolio) -->
@@ -1792,6 +1922,64 @@
             </div>
         </div>
 
+        <!-- Crypto Tab -->
+        <div id="cryptoTab" class="tab-content">
+            <div class="sub-tabs">
+                <button class="sub-tab-btn crypto-sub-tab active" data-cryptosubtab="market">📈 Market</button>
+                <button class="sub-tab-btn crypto-sub-tab" data-cryptosubtab="cryptonews">📰 News</button>
+            </div>
+
+            <!-- Market Sub-tab -->
+            <div id="cryptoMarketSubTab" class="sub-tab-content active">
+                <div class="search-container">
+                    <input type="text" id="cryptoSearchInput" placeholder="Search crypto (e.g., BTC, ETH, SOL)">
+                    <button class="search-btn" onclick="searchCrypto()">🔍 Search</button>
+                </div>
+
+                <div id="cryptoSearchResults" class="search-results" style="display: none;"></div>
+
+                <div class="top-movers-section">
+                    <h2 class="section-title">💰 Top Cryptocurrencies</h2>
+                    <div id="cryptoMarketContainer" class="top-movers-grid">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p style="margin-top: 20px; color: white;">Loading crypto market data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Crypto News Sub-tab -->
+            <div id="cryptoNewsSubTab" class="sub-tab-content">
+                <div class="news-filters">
+                    <select id="cryptoNewsTickerFilter" onchange="loadCryptoNews()">
+                        <option value="">All Cryptos</option>
+                        <option value="BTC-USD">BTC</option>
+                        <option value="ETH-USD">ETH</option>
+                        <option value="SOL-USD">SOL</option>
+                        <option value="XRP-USD">XRP</option>
+                        <option value="BNB-USD">BNB</option>
+                        <option value="ADA-USD">ADA</option>
+                        <option value="DOGE-USD">DOGE</option>
+                        <option value="AVAX-USD">AVAX</option>
+                    </select>
+                    <select id="cryptoNewsSentimentFilter" onchange="loadCryptoNews()">
+                        <option value="">All Sentiment</option>
+                        <option value="positive">Positive</option>
+                        <option value="neutral">Neutral</option>
+                        <option value="negative">Negative</option>
+                    </select>
+                    <button class="refresh-btn" onclick="loadCryptoNews()">🔄 Refresh</button>
+                </div>
+                <div id="cryptoNewsContainer" class="news-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 20px;">Loading crypto news...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Add/Edit Holding Modal -->
         <div id="addHoldingModal" class="modal">
             <div class="modal-content">
@@ -1808,9 +1996,9 @@
                         <input type="text" id="holdingTicker"
                                placeholder="e.g., AAPL"
                                required
-                               pattern="[A-Za-z]{1,5}"
+                               pattern="[A-Za-z0-9\-]{1,10}"
                                style="text-transform: uppercase;">
-                        <small>Enter a valid stock ticker symbol</small>
+                        <small>Enter a stock or crypto ticker (e.g., AAPL or BTC-USD)</small>
                     </div>
 
                     <div class="form-row">
@@ -1983,9 +2171,9 @@
                         <input type="text" id="alertTicker"
                                placeholder="e.g., AAPL"
                                required
-                               pattern="[A-Za-z]{1,5}"
+                               pattern="[A-Za-z0-9\-]{1,10}"
                                style="text-transform: uppercase;">
-                        <small>Enter a valid stock ticker symbol</small>
+                        <small>Enter a stock or crypto ticker (e.g., AAPL or BTC-USD)</small>
                     </div>
 
                     <div class="form-group">
@@ -4074,6 +4262,9 @@
             if (tabName === 'alerts') {
                 loadAlerts();
             }
+            if (tabName === 'crypto') {
+                loadCryptoMarket();
+            }
         };
 
         // News functions
@@ -4202,6 +4393,349 @@
                 closeNotificationSettingsModal();
             }
         });
+
+        // ============ CRYPTO FUNCTIONS ============
+
+        document.querySelectorAll('.crypto-sub-tab').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const subTab = this.getAttribute('data-cryptosubtab');
+                switchCryptoSubTab(subTab);
+            });
+        });
+
+        function switchCryptoSubTab(subTabName) {
+            document.getElementById('cryptoMarketSubTab').classList.remove('active');
+            document.getElementById('cryptoNewsSubTab').classList.remove('active');
+
+            document.querySelectorAll('.crypto-sub-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            const selectedTab = document.getElementById(subTabName === 'market'
+                ? 'cryptoMarketSubTab' : 'cryptoNewsSubTab');
+            const selectedBtn = document.querySelector(`[data-cryptosubtab="${subTabName}"]`);
+
+            if (selectedTab && selectedBtn) {
+                selectedTab.classList.add('active');
+                selectedBtn.classList.add('active');
+            }
+
+            if (subTabName === 'cryptonews') {
+                loadCryptoNews();
+            }
+        }
+
+        function loadCryptoMarket() {
+            const container = document.getElementById('cryptoMarketContainer');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px; color: white;">Loading crypto market data...</p>
+                </div>
+            `;
+
+            fetch('/api/crypto/market')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <h3>Error loading crypto data</h3>
+                                <p>${data.error}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    renderCryptoMarket(data.cryptos);
+                })
+                .catch(error => {
+                    console.error('Error loading crypto market:', error);
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>Error loading crypto data</h3>
+                            <p>Please try again later.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function formatLargeNumber(num) {
+            if (num === null || num === undefined) return 'N/A';
+            if (num >= 1e12) return '$' + (num / 1e12).toFixed(2) + 'T';
+            if (num >= 1e9) return '$' + (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return '$' + (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return '$' + (num / 1e3).toFixed(2) + 'K';
+            return '$' + num.toLocaleString();
+        }
+
+        function formatSupply(num) {
+            if (num === null || num === undefined) return 'N/A';
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(0) + 'K';
+            return num.toLocaleString();
+        }
+
+        function renderCryptoMarket(cryptos) {
+            const container = document.getElementById('cryptoMarketContainer');
+
+            if (!cryptos || cryptos.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No crypto data available</h3>
+                        <p>Market data is currently unavailable.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = cryptos.map((crypto, index) => {
+                const changeClass = (crypto.change_percent || 0) >= 0 ? 'positive' : 'negative';
+                const changeSign = (crypto.change_percent || 0) >= 0 ? '+' : '';
+                const symbol = crypto.symbol || crypto.ticker.replace('-USD', '');
+                const escapedName = (crypto.name || '').replace(/'/g, "\\'");
+
+                return `
+                    <div class="crypto-card" onclick="openChartModal('${crypto.ticker}', '${escapedName}')">
+                        <span class="crypto-rank">#${index + 1}</span>
+                        <div class="crypto-info">
+                            <div class="crypto-symbol">${symbol}</div>
+                            <div class="crypto-name">${crypto.name || crypto.ticker}</div>
+                        </div>
+                        <div class="crypto-stats">
+                            <div class="crypto-price">$${formatNumber(crypto.current_price)}</div>
+                            <div class="crypto-change ${changeClass}">${changeSign}${(crypto.change_percent || 0).toFixed(2)}%</div>
+                        </div>
+                        <div class="crypto-meta">
+                            <div class="crypto-mcap">MCap: <span>${formatLargeNumber(crypto.market_cap)}</span></div>
+                            <div class="crypto-vol">Vol: <span>${formatLargeNumber(crypto.volume_24h)}</span></div>
+                        </div>
+                        <div class="crypto-actions">
+                            <button class="crypto-action-btn watchlist-action"
+                                    onclick="addToWatchlist('${crypto.ticker}', event)"
+                                    title="Add to Watchlist">+</button>
+                            <button class="crypto-action-btn alert-action"
+                                    onclick="openAddAlertModalWithTicker('${crypto.ticker}', event)"
+                                    title="Set Alert">🔔</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function searchCrypto() {
+            const query = document.getElementById('cryptoSearchInput').value.trim();
+            if (!query) {
+                alert('Please enter a crypto symbol (e.g., BTC, ETH)');
+                return;
+            }
+
+            const resultsContainer = document.getElementById('cryptoSearchResults');
+            resultsContainer.style.display = 'block';
+            resultsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px; color: white;">Searching for "${query}"...</p>
+                </div>
+            `;
+
+            fetch(`/api/crypto/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        resultsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <h3>Error</h3>
+                                <p>${data.error}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    if (!data.found) {
+                        resultsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <h3>No results found</h3>
+                                <p>${data.message}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    renderCryptoSearchResult(data.crypto);
+                })
+                .catch(error => {
+                    console.error('Error searching crypto:', error);
+                    resultsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <h3>Error</h3>
+                            <p>Failed to search. Please try again.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderCryptoSearchResult(crypto) {
+            const container = document.getElementById('cryptoSearchResults');
+            const changeClass = (crypto.change_percent || 0) >= 0 ? 'positive' : 'negative';
+            const changeSign = (crypto.change_percent || 0) >= 0 ? '+' : '';
+            const symbol = crypto.symbol || crypto.ticker.replace('-USD', '');
+            const escapedName = (crypto.name || '').replace(/'/g, "\\'");
+
+            container.innerHTML = `
+                <div class="stock-card" style="max-width: 600px; margin: 0 auto; cursor: pointer;"
+                     onclick="openChartModal('${crypto.ticker}', '${escapedName}')">
+                    <div class="stock-header">
+                        <span class="stock-name">${crypto.name || crypto.ticker}</span>
+                        <span class="stock-ticker" style="background: #f7931a;">${symbol}</span>
+                    </div>
+                    <div class="price-section">
+                        <div class="current-price">$${formatNumber(crypto.current_price)}</div>
+                        <span class="price-change ${changeClass}">
+                            ${changeSign}$${Math.abs(crypto.change || 0).toFixed(2)} (${changeSign}${(crypto.change_percent || 0).toFixed(2)}%)
+                        </span>
+                    </div>
+                    <div class="stock-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Market Cap</div>
+                            <div class="detail-value">${formatLargeNumber(crypto.market_cap)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">24h Volume</div>
+                            <div class="detail-value">${formatLargeNumber(crypto.volume_24h)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Day High</div>
+                            <div class="detail-value">$${formatNumber(crypto.day_high || 0)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Day Low</div>
+                            <div class="detail-value">$${formatNumber(crypto.day_low || 0)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Supply</div>
+                            <div class="detail-value">${formatSupply(crypto.circulating_supply)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Open</div>
+                            <div class="detail-value">$${formatNumber(crypto.open || 0)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button class="watchlist-add-btn" onclick="addToWatchlist('${crypto.ticker}')">
+                        + Add to Watchlist
+                    </button>
+                    <button class="watchlist-add-btn" style="background: linear-gradient(135deg, #f7931a 0%, #ff9500 100%);"
+                            onclick="openAddAlertModalWithTicker('${crypto.ticker}')">
+                        🔔 Set Alert
+                    </button>
+                </div>
+            `;
+        }
+
+        function openAddAlertModalWithTicker(ticker, event) {
+            if (event) event.stopPropagation();
+            openAddAlertModal();
+            document.getElementById('alertTicker').value = ticker;
+            updateAlertPreview();
+        }
+
+        document.getElementById('cryptoSearchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchCrypto();
+            }
+        });
+
+        function loadCryptoNews() {
+            const container = document.getElementById('cryptoNewsContainer');
+            const tickerFilter = document.getElementById('cryptoNewsTickerFilter').value;
+            const sentimentFilter = document.getElementById('cryptoNewsSentimentFilter').value;
+
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px; color: white;">Loading crypto news...</p>
+                </div>
+            `;
+
+            let url = '/api/crypto/news?limit=10';
+            if (tickerFilter) url += `&ticker=${tickerFilter}`;
+            if (sentimentFilter) url += `&sentiment=${sentimentFilter}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        container.innerHTML = `
+                            <div class="news-empty">
+                                <h3>Error loading crypto news</h3>
+                                <p>${data.error}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    if (!data.news || data.news.length === 0) {
+                        container.innerHTML = `
+                            <div class="news-empty">
+                                <h3>No crypto news found</h3>
+                                <p>Try adjusting your filters or check back later.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    renderCryptoNewsArticles(data.news);
+                })
+                .catch(error => {
+                    console.error('Error loading crypto news:', error);
+                    container.innerHTML = `
+                        <div class="news-empty">
+                            <h3>Error loading crypto news</h3>
+                            <p>Please try again later.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderCryptoNewsArticles(articles) {
+            const container = document.getElementById('cryptoNewsContainer');
+            container.innerHTML = '';
+
+            articles.forEach(article => {
+                const publishedDate = new Date(article.published * 1000);
+                const timeAgo = getTimeAgo(publishedDate);
+
+                const sentimentClass = `sentiment-${article.sentiment}`;
+                const sentimentLabel = article.sentiment.charAt(0).toUpperCase() + article.sentiment.slice(1);
+
+                const thumbnailStyle = article.thumbnail
+                    ? `background-image: url('${article.thumbnail}')`
+                    : 'background: linear-gradient(135deg, #f7931a 0%, #ff9500 100%)';
+
+                const card = document.createElement('a');
+                card.href = article.link;
+                card.target = '_blank';
+                card.rel = 'noopener noreferrer';
+                card.className = 'news-card';
+                card.innerHTML = `
+                    <div class="news-thumbnail" style="${thumbnailStyle}"></div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="news-ticker" style="background: linear-gradient(135deg, #f7931a 0%, #ff9500 100%);">${article.ticker}</span>
+                            <span class="news-sentiment ${sentimentClass}">${sentimentLabel}</span>
+                        </div>
+                        <div class="news-title">${article.title}</div>
+                        <div class="news-meta">
+                            <span class="news-publisher">${article.publisher}</span>
+                            <span class="news-time">${timeAgo}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
     </script>
 </body>
 </html>

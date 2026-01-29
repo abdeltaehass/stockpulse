@@ -45,6 +45,42 @@ class StockData:
             print(f"Error fetching info for {self.ticker}: {e}")
             return None
     
+    def get_crypto_info(self):
+        """Get crypto-specific info including market cap, volume, and supply"""
+        try:
+            info = self.stock.info
+            current_price = self.get_current_price()
+
+            crypto_data = {
+                'ticker': self.ticker,
+                'name': info.get('name', info.get('longName', 'N/A')),
+                'symbol': self.ticker.replace('-USD', ''),
+                'current_price': current_price,
+                'previous_close': info.get('previousClose', None),
+                'open': info.get('open', None),
+                'day_high': info.get('dayHigh', None),
+                'day_low': info.get('dayLow', None),
+                'volume': info.get('volume24Hr', info.get('volume', None)),
+                'market_cap': info.get('marketCap', None),
+                'circulating_supply': info.get('circulatingSupply', None),
+                'total_supply': info.get('totalSupply', None),
+                'volume_24h': info.get('volume24Hr', info.get('volume', None)),
+            }
+
+            if current_price and crypto_data['previous_close']:
+                change = current_price - crypto_data['previous_close']
+                change_percent = (change / crypto_data['previous_close']) * 100
+                crypto_data['change'] = round(change, 2)
+                crypto_data['change_percent'] = round(change_percent, 2)
+            else:
+                crypto_data['change'] = 0
+                crypto_data['change_percent'] = 0
+
+            return crypto_data
+        except Exception as e:
+            print(f"Error fetching crypto info for {self.ticker}: {e}")
+            return None
+
     def get_historical_data(self, period='1mo'):
         try:
             data = self.stock.history(period=period)
