@@ -845,5 +845,162 @@ def trigger_daily_report():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ============ STOCK COMPARISON API ============
+
+@app.route('/api/stocks/compare', methods=['POST'])
+def compare_stocks():
+    """Compare 2-4 stocks side-by-side with metrics, technicals, predictions, and correlation"""
+    try:
+        import math
+
+        data = request.get_json()
+        tickers = data.get('tickers', [])
+        period = data.get('period', '1mo')
+
+        # Validate inputs
+        tickers = [t.strip().upper() for t in tickers if t.strip()]
+        tickers = list(dict.fromkeys(tickers))  # Remove duplicates preserving order
+
+        if len(tickers) < 2:
+            return jsonify({'error': 'At least 2 different tickers are required'}), 400
+        if len(tickers) > 4:
+            return jsonify({'error': 'Maximum 4 tickers allowed'}), 400
+
+        valid_periods = ['1wk', '1mo', '3mo', '1y']
+        if period not in valid_periods:
+            return jsonify({'error': f'Invalid period. Use: {", ".join(valid_periods)}'}), 400
+
+        metrics = []
+        normalized_prices = {}
+        returns_data = {}
+        technicals = []
+        predictions = []
+
+        for ticker in tickers:
+            stock = StockData(ticker)
+            info = stock.get_stock_info()
+
+            if not info or not info.get('current_price'):
+                return jsonify({'error': f'Invalid or unavailable ticker: {ticker}'}), 400
+
+            # Get extended info from yfinance
+            yf_info = stock.stock.info
+            weekly_change = stock.get_weekly_change()
+
+            metric = {
+                'ticker': ticker,
+                'name': info.get('name', 'N/A'),
+                'current_price': info.get('current_price'),
+                'change': info.get('change', 0),
+                'change_percent': info.get('change_percent', 0),
+                'day_high': info.get('day_high', 'N/A'),
+                'day_low': info.get('day_low', 'N/A'),
+                'volume': info.get('volume', 'N/A'),
+                'weekly_change': weekly_change,
+                'market_cap': yf_info.get('marketCap', None),
+                'pe_ratio': yf_info.get('trailingPE', None),
+                'fifty_two_week_high': yf_info.get('fiftyTwoWeekHigh', None),
+                'fifty_two_week_low': yf_info.get('fiftyTwoWeekLow', None),
+                'sector': yf_info.get('sector', 'N/A'),
+                'industry': yf_info.get('industry', 'N/A'),
+            }
+            metrics.append(metric)
+
+            # Historical data for chart and correlation
+            hist = stock.get_historical_data(period=period)
+            if hist is not None and not hist.empty:
+                closes = hist['Close']
+                first_price = float(closes.iloc[0])
+                if first_price > 0:
+                    normalized = ((closes / first_price) - 1) * 100
+                    normalized_prices[ticker] = {
+                        'labels': hist.index.strftime('%Y-%m-%d').tolist(),
+                        'values': [round(float(v), 2) for v in normalized.tolist()]
+                    }
+                    metric['period_return'] = round(float(normalized.iloc[-1]), 2)
+                else:
+                    metric['period_return'] = 0
+
+                # Daily returns for correlation
+                daily_returns = closes.pct_change().dropna()
+                returns_data[ticker] = daily_returns
+            else:
+                metric['period_return'] = 0
+
+            # Technical analysis
+            predictor = StockPredictor(ticker)
+            tech = predictor.analyze_technical()
+            technicals.append({
+                'ticker': ticker,
+                'rsi_value': tech.get('rsi', {}).get('value', 'N/A'),
+                'rsi_interpretation': tech.get('rsi', {}).get('interpretation', 'N/A'),
+                'macd_interpretation': tech.get('macd', {}).get('interpretation', 'N/A'),
+                'ma_position': tech.get('ma_trend', {}).get('position', 'N/A'),
+                'ma20': tech.get('ma_trend', {}).get('ma20', 0),
+                'ma50': tech.get('ma_trend', {}).get('ma50', 0),
+                'ma200': tech.get('ma_trend', {}).get('ma200', 0),
+            })
+
+            # Prediction
+            pred = predictor.get_prediction()
+            predictions.append({
+                'ticker': ticker,
+                'recommendation': pred.get('recommendation', 'Hold'),
+                'confidence': pred.get('confidence', 0),
+                'combined_score': pred.get('combined_score', 0),
+                'summary': pred.get('summary', ''),
+            })
+
+        # Build rankings
+        daily_ranked = sorted(metrics, key=lambda x: x.get('change_percent', 0) or 0, reverse=True)
+        weekly_ranked = sorted(metrics, key=lambda x: x.get('weekly_change', 0) or 0, reverse=True)
+        period_ranked = sorted(metrics, key=lambda x: x.get('period_return', 0) or 0, reverse=True)
+
+        rankings = {
+            'daily': [{'ticker': m['ticker'], 'value': m.get('change_percent', 0)} for m in daily_ranked],
+            'weekly': [{'ticker': m['ticker'], 'value': m.get('weekly_change', 0)} for m in weekly_ranked],
+            'period': [{'ticker': m['ticker'], 'value': m.get('period_return', 0)} for m in period_ranked],
+        }
+
+        # Build correlation matrix
+        correlation = {}
+        if len(returns_data) >= 2:
+            import pandas as pd
+            returns_df = pd.DataFrame(returns_data)
+            corr_matrix = returns_df.corr()
+
+            for t1 in tickers:
+                correlation[t1] = {}
+                for t2 in tickers:
+                    try:
+                        val = float(corr_matrix.loc[t1, t2])
+                        correlation[t1][t2] = round(val, 3) if not math.isnan(val) else 0
+                    except (KeyError, ValueError):
+                        correlation[t1][t2] = 0
+
+        # Sector analysis
+        sectors = {}
+        for m in metrics:
+            sector = m.get('sector', 'N/A')
+            if sector not in sectors:
+                sectors[sector] = []
+            sectors[sector].append(m['ticker'])
+
+        return jsonify({
+            'tickers': tickers,
+            'period': period,
+            'metrics': metrics,
+            'normalized_prices': normalized_prices,
+            'rankings': rankings,
+            'technicals': technicals,
+            'predictions': predictions,
+            'correlation': correlation,
+            'sectors': sectors,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080, host='127.0.0.1')
