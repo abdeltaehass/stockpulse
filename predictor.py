@@ -6,13 +6,16 @@ from stock_data import StockData
 
 class StockPredictor:
     WEIGHTS = {
-        'weekday':      0.10,
-        'seasonal':     0.10,
-        'weekly_trend': 0.10,
-        'rsi':          0.20,
-        'macd':         0.15,
-        'ma_trend':     0.20,
-        'sentiment':    0.15,
+        'weekday':        0.06,
+        'seasonal':       0.06,
+        'weekly_trend':   0.08,
+        'rsi':            0.16,
+        'macd':           0.13,
+        'ma_trend':       0.16,
+        'sentiment':      0.12,
+        'bollinger':      0.10,
+        'volume_trend':   0.07,
+        'atr_volatility': 0.06,
     }
 
     def __init__(self, ticker):
@@ -42,16 +45,26 @@ class StockPredictor:
             hist = hist.dropna(subset=['daily_return'])
             hist['weekday'] = hist.index.dayofweek
 
+            six_months_ago = datetime.now() - timedelta(days=180)
+            hist['recency_weight'] = np.where(hist.index >= six_months_ago, 2.0, 1.0)
+
             weekday_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
             weekday_stats = {}
 
             for day in range(5):
-                day_data = hist[hist['weekday'] == day]['daily_return']
+                day_data = hist[hist['weekday'] == day]
                 if len(day_data) > 0:
+                    weighted_return = np.average(
+                        day_data['daily_return'], weights=day_data['recency_weight']
+                    )
+                    positive_mask = (day_data['daily_return'] > 0).astype(float)
+                    weighted_pct_positive = np.average(
+                        positive_mask, weights=day_data['recency_weight']
+                    ) * 100
                     weekday_stats[day] = {
                         'name': weekday_names[day],
-                        'avg_return': round(float(day_data.mean() * 100), 4),
-                        'pct_positive': round(float((day_data > 0).mean() * 100), 1),
+                        'avg_return': round(float(weighted_return * 100), 4),
+                        'pct_positive': round(float(weighted_pct_positive), 1),
                         'count': int(len(day_data))
                     }
 
@@ -90,17 +103,25 @@ class StockPredictor:
                 'month': monthly_returns.index.month
             })
 
+            two_years_ago = datetime.now() - timedelta(days=730)
+            monthly_returns_df['recency_weight'] = np.where(
+                monthly_returns_df.index >= two_years_ago, 2.0, 1.0
+            )
+
             month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
             monthly_stats = {}
             for m in range(1, 13):
-                m_data = monthly_returns_df[monthly_returns_df['month'] == m]['return']
+                m_data = monthly_returns_df[monthly_returns_df['month'] == m]
                 if len(m_data) > 0:
+                    weighted_avg = np.average(m_data['return'], weights=m_data['recency_weight'])
+                    positive_mask = (m_data['return'] > 0).astype(float)
+                    weighted_pct = np.average(positive_mask, weights=m_data['recency_weight']) * 100
                     monthly_stats[m] = {
                         'name': month_names[m - 1],
-                        'avg_return': round(float(m_data.mean() * 100), 2),
-                        'pct_positive': round(float((m_data > 0).mean() * 100), 1),
+                        'avg_return': round(float(weighted_avg * 100), 2),
+                        'pct_positive': round(float(weighted_pct), 1),
                         'years': int(len(m_data))
                     }
 
@@ -313,9 +334,174 @@ class StockPredictor:
         except Exception:
             return self._empty_technical_result()
 
+    def analyze_bollinger(self):
+        try:
+            hist = self._get_history_2y()
+            if hist is None or len(hist) < 20:
+                return {'signal': 0.0, 'upper': 0, 'lower': 0, 'middle': 0,
+                        'bandwidth': 0, 'pct_b': 0.5, 'squeeze': False,
+                        'interpretation': 'Insufficient Data'}
+
+            close = hist['Close']
+            current_price = float(close.iloc[-1])
+
+            ma20 = close.rolling(20).mean()
+            std20 = close.rolling(20).std()
+            upper = ma20 + 2 * std20
+            lower = ma20 - 2 * std20
+
+            upper_val = float(upper.iloc[-1])
+            lower_val = float(lower.iloc[-1])
+            middle_val = float(ma20.iloc[-1])
+
+            band_width = upper_val - lower_val
+            pct_b = (current_price - lower_val) / band_width if band_width > 0 else 0.5
+
+            bandwidth_ratio = band_width / middle_val if middle_val > 0 else 0
+            bw_series = ((upper - lower) / ma20).dropna()
+            avg_bw = float(bw_series.tail(120).mean()) if len(bw_series) >= 120 else float(bw_series.mean())
+            squeeze = bandwidth_ratio < avg_bw * 0.75
+
+            if pct_b < 0.2:
+                signal = 0.5 + (0.2 - pct_b) * 2.5
+                interpretation = 'Near Lower Band (Oversold)'
+            elif pct_b > 0.8:
+                signal = -0.5 - (pct_b - 0.8) * 2.5
+                interpretation = 'Near Upper Band (Overbought)'
+            else:
+                signal = (0.5 - pct_b) * 1.0
+                interpretation = 'Within Bands'
+
+            if squeeze:
+                interpretation += ' (Squeeze)'
+                signal *= 0.5
+
+            signal = round(max(-1.0, min(1.0, signal)), 3)
+
+            return {
+                'signal': signal,
+                'upper': round(upper_val, 2),
+                'lower': round(lower_val, 2),
+                'middle': round(middle_val, 2),
+                'bandwidth': round(bandwidth_ratio * 100, 2),
+                'pct_b': round(pct_b, 3),
+                'squeeze': squeeze,
+                'interpretation': interpretation
+            }
+        except Exception:
+            return {'signal': 0.0, 'upper': 0, 'lower': 0, 'middle': 0,
+                    'bandwidth': 0, 'pct_b': 0.5, 'squeeze': False,
+                    'interpretation': 'Error'}
+
+    def analyze_volume_trend(self):
+        try:
+            hist = self._get_history_2y()
+            if hist is None or len(hist) < 30:
+                return {'signal': 0.0, 'volume_ratio': 1.0, 'trend': 'Normal',
+                        'interpretation': 'Insufficient Data'}
+
+            volume = hist['Volume']
+            close = hist['Close']
+
+            avg_vol_20 = float(volume.tail(20).mean())
+            avg_vol_5 = float(volume.tail(5).mean())
+            today_vol = float(volume.iloc[-1])
+
+            volume_ratio = avg_vol_5 / avg_vol_20 if avg_vol_20 > 0 else 1.0
+
+            price_change_5d = 0
+            if len(close) >= 6:
+                price_change_5d = (float(close.iloc[-1]) - float(close.iloc[-6])) / float(close.iloc[-6])
+
+            if volume_ratio > 1.5:
+                trend = 'High Volume'
+                if price_change_5d > 0:
+                    signal = min(1.0, (volume_ratio - 1.0) * 0.5)
+                else:
+                    signal = max(-1.0, -(volume_ratio - 1.0) * 0.5)
+            elif volume_ratio < 0.6:
+                trend = 'Low Volume'
+                signal = 0.0
+            else:
+                trend = 'Normal Volume'
+                if price_change_5d > 0.02:
+                    signal = 0.2
+                elif price_change_5d < -0.02:
+                    signal = -0.2
+                else:
+                    signal = 0.0
+
+            signal = round(max(-1.0, min(1.0, signal)), 3)
+
+            return {
+                'signal': signal,
+                'volume_ratio': round(volume_ratio, 2),
+                'avg_volume_20d': int(avg_vol_20),
+                'avg_volume_5d': int(avg_vol_5),
+                'today_volume': int(today_vol),
+                'trend': trend,
+                'interpretation': f'{trend} ({volume_ratio:.1f}x avg)'
+            }
+        except Exception:
+            return {'signal': 0.0, 'volume_ratio': 1.0, 'trend': 'Normal',
+                    'interpretation': 'Error'}
+
+    def analyze_atr(self):
+        try:
+            hist = self._get_history_2y()
+            if hist is None or len(hist) < 30:
+                return {'signal': 0.0, 'atr': 0, 'atr_pct': 0,
+                        'volatility': 'Unknown', 'interpretation': 'Insufficient Data'}
+
+            high = hist['High']
+            low = hist['Low']
+            close = hist['Close']
+            current_price = float(close.iloc[-1])
+
+            tr1 = high - low
+            tr2 = (high - close.shift(1)).abs()
+            tr3 = (low - close.shift(1)).abs()
+            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+            atr_14 = float(tr.rolling(14).mean().iloc[-1])
+            atr_50 = float(tr.rolling(50).mean().iloc[-1]) if len(tr) >= 50 else atr_14
+
+            atr_pct = (atr_14 / current_price) * 100 if current_price > 0 else 0
+            atr_ratio = atr_14 / atr_50 if atr_50 > 0 else 1.0
+
+            if atr_ratio > 1.5:
+                volatility = 'Very High'
+                signal = -0.4
+            elif atr_ratio > 1.2:
+                volatility = 'High'
+                signal = -0.2
+            elif atr_ratio < 0.7:
+                volatility = 'Low'
+                signal = 0.2
+            elif atr_ratio < 0.85:
+                volatility = 'Below Average'
+                signal = 0.1
+            else:
+                volatility = 'Normal'
+                signal = 0.0
+
+            signal = round(max(-1.0, min(1.0, signal)), 3)
+
+            return {
+                'signal': signal,
+                'atr': round(atr_14, 2),
+                'atr_pct': round(atr_pct, 2),
+                'atr_ratio': round(atr_ratio, 2),
+                'volatility': volatility,
+                'interpretation': f'{volatility} Volatility (ATR {atr_pct:.1f}% of price)'
+            }
+        except Exception:
+            return {'signal': 0.0, 'atr': 0, 'atr_pct': 0,
+                    'volatility': 'Unknown', 'interpretation': 'Error'}
+
     def analyze_sentiment(self):
         try:
-            articles = self.stock.get_news(limit=15)
+            articles = self.stock.get_news(limit=25)
             if not articles:
                 return {
                     'articles_analyzed': 0,
@@ -401,6 +587,9 @@ class StockPredictor:
         seasonal = self.analyze_seasonal()
         technical = self.analyze_technical()
         sentiment = self.analyze_sentiment()
+        bollinger = self.analyze_bollinger()
+        volume_trend = self.analyze_volume_trend()
+        atr = self.analyze_atr()
 
         signals = {
             'weekday': weekday.get('signal', 0.0),
@@ -410,6 +599,9 @@ class StockPredictor:
             'macd': technical.get('macd', {}).get('signal', 0.0),
             'ma_trend': technical.get('ma_trend', {}).get('signal', 0.0),
             'sentiment': sentiment.get('signal', 0.0),
+            'bollinger': bollinger.get('signal', 0.0),
+            'volume_trend': volume_trend.get('signal', 0.0),
+            'atr_volatility': atr.get('signal', 0.0),
         }
 
         weekly = seasonal.get('weekly_trend', {})
@@ -433,15 +625,19 @@ class StockPredictor:
 
         if combined_score > 0:
             agreeing = sum(1 for s in signals.values() if s > 0)
+            strongly_opposing = sum(1 for s in signals.values() if s < -0.3)
         elif combined_score < 0:
             agreeing = sum(1 for s in signals.values() if s < 0)
+            strongly_opposing = sum(1 for s in signals.values() if s > 0.3)
         else:
             agreeing = sum(1 for s in signals.values() if abs(s) < 0.1)
+            strongly_opposing = sum(1 for s in signals.values() if abs(s) > 0.3)
 
         total_signals = len(signals)
         agreement_ratio = agreeing / total_signals
+        disagreement_penalty = strongly_opposing * 0.08
         raw_confidence = abs(combined_score) * agreement_ratio
-        confidence = round(min(95.0, raw_confidence * 100 + 15), 1)
+        confidence = round(min(95.0, max(15.0, raw_confidence * 100 + 15 - (disagreement_penalty * 100))), 1)
 
         signal_breakdown = {
             'weekday': {
@@ -498,7 +694,29 @@ class StockPredictor:
                 'detail': f"{sentiment.get('positive_count', 0)} positive, "
                           f"{sentiment.get('negative_count', 0)} negative, "
                           f"{sentiment.get('neutral_count', 0)} neutral"
-            }
+            },
+            'bollinger': {
+                'name': 'Bollinger Bands',
+                'signal': signals['bollinger'],
+                'label': self._signal_label(signals['bollinger']),
+                'weight': self.WEIGHTS['bollinger'],
+                'detail': f"BB: {bollinger.get('interpretation', 'N/A')}, "
+                          f"%B: {bollinger.get('pct_b', 'N/A')}"
+            },
+            'volume_trend': {
+                'name': 'Volume Trend',
+                'signal': signals['volume_trend'],
+                'label': self._signal_label(signals['volume_trend']),
+                'weight': self.WEIGHTS['volume_trend'],
+                'detail': volume_trend.get('interpretation', 'N/A')
+            },
+            'atr_volatility': {
+                'name': 'ATR Volatility',
+                'signal': signals['atr_volatility'],
+                'label': self._signal_label(signals['atr_volatility']),
+                'weight': self.WEIGHTS['atr_volatility'],
+                'detail': atr.get('interpretation', 'N/A')
+            },
         }
 
         summary = self._generate_summary(
@@ -546,7 +764,10 @@ class StockPredictor:
             'rsi': 'RSI',
             'macd': 'MACD',
             'ma_trend': 'moving average trends',
-            'sentiment': 'news sentiment'
+            'sentiment': 'news sentiment',
+            'bollinger': 'Bollinger Bands',
+            'volume_trend': 'volume trend',
+            'atr_volatility': 'ATR volatility'
         }
         strongest_name = name_map.get(strongest_key, strongest_key)
 
@@ -554,7 +775,7 @@ class StockPredictor:
         ma_position = technical.get('ma_trend', {}).get('position', 'Unknown')
 
         return (
-            f"Based on analysis of 7 signals, the overall outlook is {direction} "
+            f"Based on analysis of {len(signals)} signals, the overall outlook is {direction} "
             f"with a {recommendation} recommendation at {confidence}% confidence. "
             f"The strongest signal comes from {strongest_name}. "
             f"RSI is at {rsi_val} and the stock is in a {ma_position}."

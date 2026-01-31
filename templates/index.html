@@ -1230,7 +1230,7 @@
 
         .volume-container {
             position: relative;
-            height: 120px;
+            height: 100px;
             margin-bottom: 20px;
         }
 
@@ -1593,6 +1593,16 @@
             border: 2px solid #dc3545;
         }
 
+        .recommendation-badge.buy,
+        .recommendation-badge.sell {
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+
         .confidence-section {
             flex: 1;
         }
@@ -1693,6 +1703,28 @@
         .signal-value.neutral-val {
             background: var(--input-border, #e0e0e0);
             color: var(--card-secondary);
+        }
+
+        .signal-weight {
+            font-size: 0.7rem;
+            color: var(--card-secondary);
+            font-weight: 400;
+            margin-left: 6px;
+            opacity: 0.7;
+        }
+
+        .signal-strength-bar {
+            height: 4px;
+            background: rgba(128, 128, 128, 0.15);
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .signal-strength-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.8s ease-out;
         }
 
         .pattern-charts {
@@ -3095,7 +3127,7 @@
 
                     updateStatistics(data.statistics);
                     renderChart(data, currentChartType);
-                    renderVolumeChart(data.data.labels, data.data.volume);
+                    renderVolumeChart(data.data.labels, data.data.volume, data.data.open, data.data.prices);
                 })
                 .catch(function(error) {
                     console.error('Error loading chart:', error);
@@ -3119,6 +3151,39 @@
             changeEl.className = 'stat-value ' + (stats.period_change >= 0 ? 'positive' : 'negative');
         }
 
+        const crosshairPlugin = {
+            id: 'crosshair',
+            afterDraw(chart) {
+                if (chart.tooltip && chart.tooltip._active && chart.tooltip._active.length) {
+                    const activePoint = chart.tooltip._active[0];
+                    const ctx = chart.ctx;
+                    const x = activePoint.element.x;
+                    const y = activePoint.element.y;
+                    const topY = chart.scales.y.top;
+                    const bottomY = chart.scales.y.bottom;
+                    const leftX = chart.scales.x.left;
+                    const rightX = chart.scales.x.right;
+
+                    ctx.save();
+                    ctx.setLineDash([4, 4]);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = 'rgba(108, 117, 125, 0.5)';
+
+                    ctx.beginPath();
+                    ctx.moveTo(x, topY);
+                    ctx.lineTo(x, bottomY);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(leftX, y);
+                    ctx.lineTo(rightX, y);
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+            }
+        };
+
         function renderChart(data, chartType) {
             const ctx = document.getElementById('priceChart').getContext('2d');
 
@@ -3130,42 +3195,95 @@
             const prices = data.data.prices;
             const datasets = [];
 
+            const chartTooltipConfig = {
+                backgroundColor: 'rgba(30, 30, 47, 0.95)',
+                titleColor: '#ffffff',
+                bodyColor: '#e0e0e0',
+                borderColor: 'rgba(102, 126, 234, 0.4)',
+                borderWidth: 1,
+                padding: 14,
+                cornerRadius: 10,
+                titleFont: { size: 13, weight: '600' },
+                bodyFont: { size: 12, weight: '400' },
+                displayColors: true,
+                boxWidth: 10,
+                boxHeight: 10,
+                boxPadding: 4,
+                callbacks: {
+                    label: function(context) {
+                        const value = context.parsed.y;
+                        const label = context.dataset.label;
+                        const formatted = '$' + value.toLocaleString('en-US', {
+                            minimumFractionDigits: 2, maximumFractionDigits: 2
+                        });
+                        return ' ' + label + ': ' + formatted;
+                    }
+                }
+            };
+
+            const chartScalesConfig = {
+                x: {
+                    grid: { display: true, color: 'rgba(128, 128, 128, 0.06)', drawBorder: false },
+                    ticks: { maxTicksLimit: 8, color: '#9a9a9a', font: { size: 11 }, maxRotation: 0 },
+                    border: { display: false }
+                },
+                y: {
+                    position: 'right',
+                    grid: { color: 'rgba(128, 128, 128, 0.08)', drawBorder: false },
+                    ticks: {
+                        color: '#9a9a9a',
+                        font: { size: 11 },
+                        padding: 8,
+                        callback: function(value) {
+                            return '$' + value.toLocaleString('en-US', {
+                                minimumFractionDigits: 2, maximumFractionDigits: 2
+                            });
+                        }
+                    },
+                    border: { display: false }
+                }
+            };
+
             if (chartType === 'line') {
-                const minPrice = Math.min(...prices);
-                const maxPrice = Math.max(...prices);
-                const priceRange = maxPrice - minPrice;
+                const isUp = prices[prices.length - 1] >= prices[0];
+                const lineColor = isUp ? '#28a745' : '#dc3545';
 
                 const gradient = ctx.createLinearGradient(0, 0, 0, 350);
-                gradient.addColorStop(0, 'rgba(102, 126, 234, 0.5)');
-                gradient.addColorStop(1, 'rgba(118, 75, 162, 0.1)');
+                if (isUp) {
+                    gradient.addColorStop(0, 'rgba(40, 167, 69, 0.25)');
+                    gradient.addColorStop(1, 'rgba(40, 167, 69, 0.02)');
+                } else {
+                    gradient.addColorStop(0, 'rgba(220, 53, 69, 0.25)');
+                    gradient.addColorStop(1, 'rgba(220, 53, 69, 0.02)');
+                }
 
                 datasets.push({
                     label: 'Price',
                     data: prices,
-                    borderColor: '#667eea',
+                    borderColor: lineColor,
                     backgroundColor: gradient,
-                    borderWidth: 3,
+                    borderWidth: 2,
                     fill: true,
-                    tension: 0.4,
+                    tension: 0.2,
                     pointRadius: 0,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: '#667eea',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: lineColor,
                     pointHoverBorderColor: 'white',
                     pointHoverBorderWidth: 2,
                     order: 1
                 });
 
-                // Moving averages overlay
                 if (data.data.ma_20 && data.data.ma_20.some(v => v !== null)) {
                     datasets.push({
                         label: 'MA 20',
                         data: data.data.ma_20,
                         borderColor: '#ff6384',
-                        borderWidth: 2,
+                        borderWidth: 1.5,
                         fill: false,
-                        tension: 0.4,
+                        tension: 0.2,
                         pointRadius: 0,
-                        pointHoverRadius: 4,
+                        pointHoverRadius: 3,
+                        borderDash: [4, 3],
                         order: 2
                     });
                 }
@@ -3175,11 +3293,12 @@
                         label: 'MA 50',
                         data: data.data.ma_50,
                         borderColor: '#36a2eb',
-                        borderWidth: 2,
+                        borderWidth: 1.5,
                         fill: false,
-                        tension: 0.4,
+                        tension: 0.2,
                         pointRadius: 0,
-                        pointHoverRadius: 4,
+                        pointHoverRadius: 3,
+                        borderDash: [4, 3],
                         order: 3
                     });
                 }
@@ -3189,198 +3308,181 @@
                         label: 'MA 200',
                         data: data.data.ma_200,
                         borderColor: '#ffcd56',
-                        borderWidth: 2,
+                        borderWidth: 1.5,
                         fill: false,
-                        tension: 0.4,
+                        tension: 0.2,
                         pointRadius: 0,
-                        pointHoverRadius: 4,
+                        pointHoverRadius: 3,
+                        borderDash: [4, 3],
                         order: 4
                     });
                 }
 
                 currentChart = new Chart(ctx, {
                     type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: datasets
-                    },
+                    data: { labels: labels, datasets: datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        interaction: {
-                            intersect: false,
-                            mode: 'index'
-                        },
+                        interaction: { intersect: false, mode: 'index' },
                         plugins: {
                             legend: {
                                 display: true,
                                 position: 'top',
                                 labels: {
-                                    boxWidth: 20,
-                                    padding: 15,
-                                    font: {
-                                        size: 12
-                                    }
+                                    usePointStyle: true,
+                                    boxWidth: 8,
+                                    padding: 16,
+                                    font: { size: 11, weight: '600' }
                                 }
                             },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                padding: 12,
-                                titleFont: {
-                                    size: 14,
-                                    weight: 'bold'
-                                },
-                                bodyFont: {
-                                    size: 12
-                                },
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
-                                    }
-                                }
-                            }
+                            tooltip: chartTooltipConfig
                         },
-                        scales: {
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    maxTicksLimit: 8,
-                                    color: '#6c757d'
-                                }
-                            },
-                            y: {
-                                grid: {
-                                    color: 'rgba(0, 0, 0, 0.05)'
-                                },
-                                ticks: {
-                                    color: '#6c757d',
-                                    callback: function(value) {
-                                        return '$' + value.toFixed(2);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                        scales: chartScalesConfig
+                    },
+                    plugins: [crosshairPlugin]
                 });
             } else {
-                // OHLC candlestick chart
                 const open = data.data.open;
                 const high = data.data.high;
                 const low = data.data.low;
                 const close = prices;
 
-                const barColors = close.map((c, i) => c >= open[i] ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)');
+                const allValues = [...high, ...low].filter(v => v != null);
+                const dataMin = Math.min(...allValues);
+                const dataMax = Math.max(...allValues);
+                const padding = (dataMax - dataMin) * 0.05;
+
+                const candlestickPlugin = {
+                    id: 'candlestickDraw',
+                    afterDatasetsDraw(chart) {
+                        const drawCtx = chart.ctx;
+                        const xScale = chart.scales.x;
+                        const yScale = chart.scales.y;
+                        const meta = chart.getDatasetMeta(0);
+
+                        for (let i = 0; i < meta.data.length; i++) {
+                            const x = meta.data[i].x;
+                            const oVal = open[i];
+                            const hVal = high[i];
+                            const lVal = low[i];
+                            const cVal = close[i];
+
+                            if (oVal == null || cVal == null) continue;
+
+                            const isUpCandle = cVal >= oVal;
+                            const bodyTop = yScale.getPixelForValue(Math.max(oVal, cVal));
+                            const bodyBottom = yScale.getPixelForValue(Math.min(oVal, cVal));
+                            const wickTop = yScale.getPixelForValue(hVal);
+                            const wickBottom = yScale.getPixelForValue(lVal);
+                            const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
+                            const barWidth = Math.max((xScale.width / meta.data.length) * 0.6, 3);
+
+                            drawCtx.save();
+
+                            drawCtx.strokeStyle = isUpCandle ? '#28a745' : '#dc3545';
+                            drawCtx.lineWidth = 1.5;
+                            drawCtx.beginPath();
+                            drawCtx.moveTo(x, wickTop);
+                            drawCtx.lineTo(x, wickBottom);
+                            drawCtx.stroke();
+
+                            if (isUpCandle) {
+                                drawCtx.fillStyle = 'rgba(40, 167, 69, 0.3)';
+                                drawCtx.fillRect(x - barWidth / 2, bodyTop, barWidth, bodyHeight);
+                                drawCtx.strokeStyle = '#28a745';
+                                drawCtx.lineWidth = 1.5;
+                                drawCtx.strokeRect(x - barWidth / 2, bodyTop, barWidth, bodyHeight);
+                            } else {
+                                drawCtx.fillStyle = '#dc3545';
+                                drawCtx.fillRect(x - barWidth / 2, bodyTop, barWidth, bodyHeight);
+                            }
+
+                            drawCtx.restore();
+                        }
+                    }
+                };
 
                 datasets.push({
-                    label: 'High-Low',
-                    data: high,
-                    type: 'line',
-                    borderColor: '#999',
-                    borderWidth: 1,
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0,
-                    spanGaps: false
-                });
-
-                datasets.push({
-                    label: 'Low',
-                    data: low,
-                    type: 'line',
-                    borderColor: '#999',
-                    borderWidth: 1,
-                    pointRadius: 0,
-                    fill: '-1',
-                    backgroundColor: 'rgba(200, 200, 200, 0.1)',
-                    tension: 0
-                });
-
-                datasets.push({
-                    label: 'Close',
+                    label: 'Price',
                     data: close,
-                    type: 'bar',
-                    backgroundColor: barColors,
-                    borderColor: barColors,
-                    borderWidth: 1,
-                    barThickness: 'flex',
-                    maxBarThickness: 12
+                    borderColor: 'transparent',
+                    backgroundColor: 'transparent',
+                    pointRadius: 0,
+                    pointHoverRadius: 0
                 });
+
+                const candleScales = JSON.parse(JSON.stringify(chartScalesConfig));
+                candleScales.y.min = dataMin - padding;
+                candleScales.y.max = dataMax + padding;
 
                 currentChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: datasets
-                    },
+                    type: 'line',
+                    data: { labels: labels, datasets: datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        interaction: {
-                            intersect: false,
-                            mode: 'index'
-                        },
+                        interaction: { intersect: false, mode: 'index' },
                         plugins: {
-                            legend: {
-                                display: false
-                            },
+                            legend: { display: false },
                             tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                padding: 12,
+                                backgroundColor: 'rgba(30, 30, 47, 0.95)',
+                                borderColor: 'rgba(102, 126, 234, 0.4)',
+                                borderWidth: 1,
+                                cornerRadius: 10,
+                                padding: 14,
                                 displayColors: false,
                                 callbacks: {
                                     title: function(context) {
                                         return context[0].label;
                                     },
                                     label: function(context) {
-                                        const index = context[0].dataIndex;
-                                        const change = close[index] - open[index];
-                                        const changePercent = (change / open[index]) * 100;
+                                        const idx = context.dataIndex;
+                                        const change = close[idx] - open[idx];
+                                        const pct = ((change / open[idx]) * 100).toFixed(2);
                                         return [
-                                            'Open: $' + open[index].toFixed(2),
-                                            'High: $' + high[index].toFixed(2),
-                                            'Low: $' + low[index].toFixed(2),
-                                            'Close: $' + close[index].toFixed(2),
-                                            'Change: ' + (change >= 0 ? '+$' : '-$') + Math.abs(change).toFixed(2) + ' (' + (change >= 0 ? '+' : '') + changePercent.toFixed(2) + '%)'
+                                            'Open:  $' + open[idx].toFixed(2),
+                                            'High:  $' + high[idx].toFixed(2),
+                                            'Low:   $' + low[idx].toFixed(2),
+                                            'Close: $' + close[idx].toFixed(2),
+                                            '',
+                                            (change >= 0 ? '+' : '') + '$' + change.toFixed(2) + ' (' + (change >= 0 ? '+' : '') + pct + '%)'
                                         ];
                                     }
                                 }
                             }
                         },
-                        scales: {
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    maxTicksLimit: 8,
-                                    color: '#6c757d'
-                                }
-                            },
-                            y: {
-                                grid: {
-                                    color: 'rgba(0, 0, 0, 0.05)'
-                                },
-                                ticks: {
-                                    color: '#6c757d',
-                                    callback: function(value) {
-                                        return '$' + value.toFixed(2);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                        scales: candleScales
+                    },
+                    plugins: [candlestickPlugin, crosshairPlugin]
                 });
             }
         }
 
-        function renderVolumeChart(labels, volumes) {
+        function renderVolumeChart(labels, volumes, openPrices, closePrices) {
             const ctx = document.getElementById('volumeChart').getContext('2d');
 
             if (currentVolumeChart) {
                 currentVolumeChart.destroy();
             }
+
+            const volumeColors = volumes.map((v, i) => {
+                if (closePrices && openPrices && closePrices[i] !== undefined && openPrices[i] !== undefined) {
+                    return closePrices[i] >= openPrices[i]
+                        ? 'rgba(40, 167, 69, 0.5)'
+                        : 'rgba(220, 53, 69, 0.5)';
+                }
+                return 'rgba(102, 126, 234, 0.5)';
+            });
+
+            const volumeBorders = volumes.map((v, i) => {
+                if (closePrices && openPrices && closePrices[i] !== undefined && openPrices[i] !== undefined) {
+                    return closePrices[i] >= openPrices[i]
+                        ? 'rgba(40, 167, 69, 0.8)'
+                        : 'rgba(220, 53, 69, 0.8)';
+                }
+                return '#667eea';
+            });
 
             currentVolumeChart = new Chart(ctx, {
                 type: 'bar',
@@ -3389,24 +3491,23 @@
                     datasets: [{
                         label: 'Volume',
                         data: volumes,
-                        backgroundColor: 'rgba(102, 126, 234, 0.5)',
-                        borderColor: '#667eea',
-                        borderWidth: 1
+                        backgroundColor: volumeColors,
+                        borderColor: volumeBorders,
+                        borderWidth: 1,
+                        borderRadius: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
+                    interaction: { intersect: false, mode: 'index' },
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            backgroundColor: 'rgba(30, 30, 47, 0.95)',
+                            borderColor: 'rgba(102, 126, 234, 0.4)',
+                            borderWidth: 1,
+                            cornerRadius: 10,
                             padding: 12,
                             callbacks: {
                                 label: function(context) {
@@ -3420,22 +3521,21 @@
                         }
                     },
                     scales: {
-                        x: {
-                            display: false
-                        },
+                        x: { display: false },
                         y: {
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            },
+                            position: 'right',
+                            grid: { color: 'rgba(128, 128, 128, 0.06)', drawBorder: false },
                             ticks: {
-                                color: '#6c757d',
+                                color: '#9a9a9a',
+                                font: { size: 10 },
                                 callback: function(value) {
                                     if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
                                     else if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
                                     else if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
                                     return value;
                                 }
-                            }
+                            },
+                            border: { display: false }
                         }
                     }
                 }
@@ -4061,12 +4161,19 @@
             for (const [key, sig] of Object.entries(breakdown)) {
                 const signalClass = sig.signal > 0.15 ? 'bullish' : (sig.signal < -0.15 ? 'bearish' : 'neutral');
                 const valueClass = sig.signal > 0.15 ? 'bullish' : (sig.signal < -0.15 ? 'bearish' : 'neutral-val');
+                const strength = Math.abs(sig.signal);
+                const strengthPct = Math.round(strength * 100);
+                const strengthColor = sig.signal > 0.15 ? '#28a745' : (sig.signal < -0.15 ? '#dc3545' : '#6c757d');
+                const weightPct = Math.round(sig.weight * 100);
 
                 breakdownHTML += `
                     <div class="signal-card ${signalClass}">
                         <div class="signal-info">
-                            <div class="signal-name">${sig.name}</div>
+                            <div class="signal-name">${sig.name}<span class="signal-weight">${weightPct}%</span></div>
                             <div class="signal-detail">${sig.detail}</div>
+                            <div class="signal-strength-bar">
+                                <div class="signal-strength-fill" style="width: ${strengthPct}%; background: ${strengthColor};"></div>
+                            </div>
                         </div>
                         <div class="signal-value ${valueClass}">${sig.label}</div>
                     </div>
@@ -4080,6 +4187,26 @@
             document.getElementById('predictionDisclaimer').textContent = prediction.disclaimer;
         }
 
+        const referenceLinePlugin = {
+            id: 'referenceLine',
+            afterDraw(chart) {
+                const refValue = chart.config.options._referenceValue;
+                if (refValue == null) return;
+                const yScale = chart.scales.y;
+                const yPixel = yScale.getPixelForValue(refValue);
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = 'rgba(128, 128, 128, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(chart.chartArea.left, yPixel);
+                ctx.lineTo(chart.chartArea.right, yPixel);
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
         function renderWeekdayChart(weekdayData) {
             if (weekdayChartInstance) {
                 weekdayChartInstance.destroy();
@@ -4089,6 +4216,7 @@
             const labels = [];
             const values = [];
             const colors = [];
+            const borders = [];
 
             for (let d = 0; d < 5; d++) {
                 if (stats[d]) {
@@ -4096,8 +4224,13 @@
                     values.push(stats[d].pct_positive);
                     if (d === weekdayData.today_weekday) {
                         colors.push('#667eea');
+                        borders.push('#667eea');
+                    } else if (stats[d].pct_positive >= 50) {
+                        colors.push('rgba(40, 167, 69, 0.7)');
+                        borders.push('rgba(40, 167, 69, 1.0)');
                     } else {
-                        colors.push(stats[d].pct_positive >= 50 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)');
+                        colors.push('rgba(220, 53, 69, 0.7)');
+                        borders.push('rgba(220, 53, 69, 1.0)');
                     }
                 }
             }
@@ -4111,15 +4244,22 @@
                         label: '% Days Positive',
                         data: values,
                         backgroundColor: colors,
-                        borderRadius: 6
+                        borderColor: borders,
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        borderSkipped: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    _referenceValue: 50,
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: 'rgba(30, 30, 47, 0.95)',
+                            cornerRadius: 8,
+                            padding: 10,
                             callbacks: {
                                 label: function(ctx) { return ctx.parsed.y.toFixed(1) + '% positive days'; }
                             }
@@ -4131,18 +4271,23 @@
                             max: 70,
                             ticks: {
                                 callback: function(v) { return v + '%'; },
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--card-secondary') || '#6c757d'
+                                color: '#9a9a9a',
+                                font: { size: 10 }
                             },
-                            grid: { color: 'rgba(128,128,128,0.1)' }
+                            grid: { color: 'rgba(128,128,128,0.08)' },
+                            border: { display: false }
                         },
                         x: {
                             ticks: {
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--card-secondary') || '#6c757d'
+                                color: '#9a9a9a',
+                                font: { size: 10 }
                             },
-                            grid: { display: false }
+                            grid: { display: false },
+                            border: { display: false }
                         }
                     }
-                }
+                },
+                plugins: [referenceLinePlugin]
             });
         }
 
@@ -4155,6 +4300,7 @@
             const labels = [];
             const values = [];
             const colors = [];
+            const borders = [];
 
             for (let m = 1; m <= 12; m++) {
                 if (stats[m]) {
@@ -4162,8 +4308,13 @@
                     values.push(stats[m].avg_return);
                     if (m === seasonalData.current_month) {
                         colors.push('#667eea');
+                        borders.push('#667eea');
+                    } else if (stats[m].avg_return >= 0) {
+                        colors.push('rgba(40, 167, 69, 0.7)');
+                        borders.push('rgba(40, 167, 69, 1.0)');
                     } else {
-                        colors.push(stats[m].avg_return >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)');
+                        colors.push('rgba(220, 53, 69, 0.7)');
+                        borders.push('rgba(220, 53, 69, 1.0)');
                     }
                 }
             }
@@ -4177,15 +4328,22 @@
                         label: 'Avg Monthly Return %',
                         data: values,
                         backgroundColor: colors,
-                        borderRadius: 6
+                        borderColor: borders,
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        borderSkipped: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    _referenceValue: 0,
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: 'rgba(30, 30, 47, 0.95)',
+                            cornerRadius: 8,
+                            padding: 10,
                             callbacks: {
                                 label: function(ctx) { return (ctx.parsed.y >= 0 ? '+' : '') + ctx.parsed.y.toFixed(2) + '% avg return'; }
                             }
@@ -4195,18 +4353,23 @@
                         y: {
                             ticks: {
                                 callback: function(v) { return (v >= 0 ? '+' : '') + v + '%'; },
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--card-secondary') || '#6c757d'
+                                color: '#9a9a9a',
+                                font: { size: 10 }
                             },
-                            grid: { color: 'rgba(128,128,128,0.1)' }
+                            grid: { color: 'rgba(128,128,128,0.08)' },
+                            border: { display: false }
                         },
                         x: {
                             ticks: {
-                                color: getComputedStyle(document.documentElement).getPropertyValue('--card-secondary') || '#6c757d'
+                                color: '#9a9a9a',
+                                font: { size: 10 }
                             },
-                            grid: { display: false }
+                            grid: { display: false },
+                            border: { display: false }
                         }
                     }
-                }
+                },
+                plugins: [referenceLinePlugin]
             });
         }
 

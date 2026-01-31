@@ -168,18 +168,60 @@ class StockData:
             'surge', 'jump', 'gain', 'rise', 'soar', 'rally', 'bull', 'boom',
             'growth', 'profit', 'beat', 'exceed', 'upgrade', 'buy', 'strong',
             'record', 'high', 'success', 'win', 'breakthrough', 'innovation',
-            'positive', 'optimistic', 'confidence', 'recovery', 'outperform'
+            'positive', 'optimistic', 'confidence', 'recovery', 'outperform',
+            'momentum', 'upside', 'bullish', 'dividend', 'breakout', 'expand'
         ]
 
         negative_words = [
             'fall', 'drop', 'plunge', 'crash', 'decline', 'loss', 'bear',
             'miss', 'fail', 'downgrade', 'sell', 'weak', 'low', 'concern',
             'fear', 'risk', 'warning', 'cut', 'layoff', 'lawsuit', 'fraud',
-            'investigation', 'negative', 'pessimistic', 'recession', 'crisis'
+            'investigation', 'negative', 'pessimistic', 'recession', 'crisis',
+            'bearish', 'downside', 'default', 'bankruptcy', 'slump', 'plummet'
         ]
 
-        positive_count = sum(1 for word in positive_words if word in text_lower)
-        negative_count = sum(1 for word in negative_words if word in text_lower)
+        positive_phrases = [
+            'beat expectations', 'exceeded estimates', 'raised guidance',
+            'strong earnings', 'record revenue', 'all-time high',
+            'buy rating', 'price target raised', 'dividend increase',
+            'share buyback', 'strong demand', 'revenue growth'
+        ]
+
+        negative_phrases = [
+            'missed earnings', 'missed expectations', 'lowered guidance',
+            'price target cut', 'revenue miss', 'profit warning',
+            'going concern', 'debt default', 'sec investigation',
+            'class action', 'supply chain disruption', 'margin pressure'
+        ]
+
+        negation_words = {'not', 'no', 'never', 'neither', 'hardly', 'barely',
+                          "don't", "doesn't", "didn't", "won't", "can't",
+                          "isn't", "wasn't", "wouldn't", 'nor'}
+
+        positive_count = 0
+        negative_count = 0
+
+        for phrase in positive_phrases:
+            if phrase in text_lower:
+                positive_count += 2
+
+        for phrase in negative_phrases:
+            if phrase in text_lower:
+                negative_count += 2
+
+        words = text_lower.split()
+        for i, word in enumerate(words):
+            negated = (i > 0 and words[i - 1] in negation_words)
+            if word in positive_words:
+                if negated:
+                    negative_count += 1
+                else:
+                    positive_count += 1
+            elif word in negative_words:
+                if negated:
+                    positive_count += 1
+                else:
+                    negative_count += 1
 
         if positive_count > negative_count:
             return 'positive'
