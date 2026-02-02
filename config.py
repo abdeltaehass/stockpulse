@@ -27,6 +27,19 @@ class Config:
     # Discord settings
     DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')
 
+    # Alpaca Trading API
+    ALPACA_API_KEY = os.getenv('ALPACA_API_KEY')
+    ALPACA_SECRET_KEY = os.getenv('ALPACA_SECRET_KEY')
+    ALPACA_BASE_URL = os.getenv('ALPACA_BASE_URL', 'https://paper-api.alpaca.markets')
+    ALPACA_PAPER = os.getenv('ALPACA_BASE_URL', 'https://paper-api.alpaca.markets').startswith('https://paper')
+
+    # Binance Trading API
+    BINANCE_API_KEY = os.getenv('BINANCE_API_KEY')
+    BINANCE_SECRET_KEY = os.getenv('BINANCE_SECRET_KEY')
+
+    # Telegram Trading Bot
+    TELEGRAM_TRADING_ENABLED = os.getenv('TELEGRAM_TRADING_ENABLED', 'True') == 'True'
+
     # Alert settings
     ALERT_CHECK_INTERVAL = int(os.getenv('ALERT_CHECK_INTERVAL', '5'))
     ALERT_COOLDOWN_HOURS = int(os.getenv('ALERT_COOLDOWN_HOURS', '1'))

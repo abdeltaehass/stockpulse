@@ -5,15 +5,24 @@ from predictor import StockPredictor
 from database import init_db, get_db_connection
 from scheduler import start_scheduler, reschedule_daily_report
 from notifications import send_email_notification, send_telegram_notification, send_discord_notification
+from config import Config
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
+
+logging.basicConfig(level=logging.INFO)
 
 # Initialize database on startup
 init_db()
 
 # Start background scheduler for price alerts
 start_scheduler()
+
+# Start Telegram trading bot
+if Config.TELEGRAM_TRADING_ENABLED and Config.TELEGRAM_BOT_TOKEN:
+    from telegram_bot import start_telegram_bot
+    start_telegram_bot()
 
 def get_watchlist():
     """Read watchlist tickers from the database"""
@@ -1001,6 +1010,35 @@ def compare_stocks():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/trades', methods=['GET'])
+def get_trade_history():
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        platform = request.args.get('platform', None)
+
+        query = 'SELECT * FROM trade_history'
+        params = []
+
+        if platform:
+            query += ' WHERE platform = ?'
+            params.append(platform)
+
+        query += ' ORDER BY created_at DESC LIMIT ?'
+        params.append(limit)
+
+        with get_db_connection() as conn:
+            cursor = conn.execute(query, params)
+            trades = [dict(row) for row in cursor.fetchall()]
+
+        return jsonify({
+            'trades': trades,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080, host='127.0.0.1')

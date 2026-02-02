@@ -4,3 +4,6 @@ python-dotenv
 flask
 APScheduler==3.10.4
 requests>=2.31.0
+python-telegram-bot>=20.7
+alpaca-py>=0.21.1
+python-binance>=1.0.19

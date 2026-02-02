@@ -124,6 +124,28 @@ def init_db():
             )
         ''')
 
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS trade_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                platform VARCHAR(20) NOT NULL,
+                ticker VARCHAR(20) NOT NULL,
+                side VARCHAR(10) NOT NULL,
+                quantity REAL NOT NULL,
+                price REAL,
+                total_value REAL,
+                order_id VARCHAR(100),
+                status VARCHAR(20) DEFAULT 'submitted',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                CHECK (platform IN ('alpaca', 'binance')),
+                CHECK (side IN ('buy', 'sell'))
+            )
+        ''')
+
+        try:
+            conn.execute('ALTER TABLE notification_settings ADD COLUMN trading_enabled INTEGER DEFAULT 0')
+        except:
+            pass
+
         # Seed default watchlist if empty
         cursor = conn.execute('SELECT COUNT(*) FROM watchlist')
         count = cursor.fetchone()[0]
