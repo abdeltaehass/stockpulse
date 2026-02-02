@@ -418,7 +418,7 @@ async def cmd_predict(update: Update, context: ContextTypes.DEFAULT_TYPE):
         summary = prediction.get('summary', '')
 
         breakdown_text = ""
-        for sig in prediction.get('signal_breakdown', []):
+        for _, sig in prediction.get('signal_breakdown', {}).items():
             label = sig.get('label', '')
             name = sig.get('name', '')
             breakdown_text += f"  {name}: {label}\n"

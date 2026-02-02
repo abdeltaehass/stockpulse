@@ -2,20 +2,23 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from stock_data import StockData
+from sklearn.ensemble import RandomForestClassifier
 
 
 class StockPredictor:
     WEIGHTS = {
-        'weekday':        0.06,
-        'seasonal':       0.06,
-        'weekly_trend':   0.08,
-        'rsi':            0.16,
-        'macd':           0.13,
-        'ma_trend':       0.16,
-        'sentiment':      0.12,
-        'bollinger':      0.10,
-        'volume_trend':   0.07,
-        'atr_volatility': 0.06,
+        'historical_pattern': 0.12,
+        'ml_prediction':      0.10,
+        'rsi':                0.12,
+        'ma_trend':           0.12,
+        'macd':               0.10,
+        'sentiment':          0.10,
+        'bollinger':          0.08,
+        'weekly_trend':       0.07,
+        'volume_trend':       0.06,
+        'weekday':            0.05,
+        'seasonal':           0.04,
+        'atr_volatility':     0.04,
     }
 
     def __init__(self, ticker):
@@ -499,6 +502,235 @@ class StockPredictor:
             return {'signal': 0.0, 'atr': 0, 'atr_pct': 0,
                     'volatility': 'Unknown', 'interpretation': 'Error'}
 
+    def analyze_historical_pattern(self):
+        try:
+            hist = self._get_history_2y()
+            if hist is None or len(hist) < 252:
+                return self._empty_historical_result()
+
+            df = hist.copy()
+            df['daily_return'] = df['Close'].pct_change()
+
+            today_idx = len(df) - 1
+
+            lookbacks = [
+                {'name': '1 Week Ago',   'days': 5,   'weight': 0.30},
+                {'name': '1 Month Ago',  'days': 21,  'weight': 0.25},
+                {'name': '3 Months Ago', 'days': 63,  'weight': 0.20},
+                {'name': '6 Months Ago', 'days': 126, 'weight': 0.15},
+                {'name': '1 Year Ago',   'days': 252, 'weight': 0.10},
+            ]
+
+            pattern_details = []
+            weighted_signal = 0.0
+            total_weight = 0.0
+
+            for lb in lookbacks:
+                target_idx = today_idx - lb['days']
+                if target_idx < 1 or target_idx >= len(df):
+                    continue
+
+                day_return = float(df['daily_return'].iloc[target_idx])
+
+                context_start = max(1, target_idx - 1)
+                context_end = min(len(df) - 1, target_idx + 1)
+                context_returns = df['daily_return'].iloc[context_start:context_end + 1]
+                context_return = float(context_returns.sum())
+
+                combined_return = day_return * 0.6 + context_return * 0.4
+
+                signal = max(-1.0, min(1.0, combined_return / 0.02))
+
+                weighted_signal += signal * lb['weight']
+                total_weight += lb['weight']
+
+                pattern_details.append({
+                    'period': lb['name'],
+                    'day_return': round(day_return * 100, 3),
+                    'context_return': round(context_return * 100, 3),
+                    'signal': round(signal, 3),
+                    'weight': lb['weight']
+                })
+
+            if total_weight > 0:
+                final_signal = weighted_signal / total_weight
+            else:
+                final_signal = 0.0
+
+            final_signal = round(max(-1.0, min(1.0, final_signal)), 3)
+
+            return {
+                'signal': final_signal,
+                'lookbacks': pattern_details,
+                'interpretation': self._historical_interpretation(final_signal),
+            }
+        except Exception:
+            return self._empty_historical_result()
+
+    @staticmethod
+    def _historical_interpretation(signal):
+        if signal > 0.3:
+            return 'Historical dates were strongly positive'
+        elif signal > 0.1:
+            return 'Historical dates were moderately positive'
+        elif signal > -0.1:
+            return 'Historical dates were mixed'
+        elif signal > -0.3:
+            return 'Historical dates were moderately negative'
+        else:
+            return 'Historical dates were strongly negative'
+
+    def _empty_historical_result(self):
+        return {
+            'signal': 0.0,
+            'lookbacks': [],
+            'interpretation': 'Insufficient historical data',
+        }
+
+    def analyze_ml(self):
+        try:
+            hist = self._get_history_2y()
+            if hist is None or len(hist) < 300:
+                return self._empty_ml_result()
+
+            df = hist.copy()
+            close = df['Close']
+            high = df['High']
+            low = df['Low']
+            volume = df['Volume']
+
+            df['return_1d'] = close.pct_change(1)
+            df['return_5d'] = close.pct_change(5)
+            df['return_20d'] = close.pct_change(20)
+
+            delta = close.diff()
+            gain = delta.where(delta > 0, 0.0)
+            loss = (-delta).where(delta < 0, 0.0)
+            avg_gain = gain.rolling(14).mean()
+            avg_loss = loss.rolling(14).mean()
+            rs = avg_gain / avg_loss
+            df['rsi'] = 100 - (100 / (1 + rs))
+
+            ema12 = close.ewm(span=12, adjust=False).mean()
+            ema26 = close.ewm(span=26, adjust=False).mean()
+            macd_line = ema12 - ema26
+            signal_line = macd_line.ewm(span=9, adjust=False).mean()
+            df['macd_hist_norm'] = (macd_line - signal_line) / close * 100
+
+            ma20 = close.rolling(20).mean()
+            std20 = close.rolling(20).std()
+            upper_bb = ma20 + 2 * std20
+            lower_bb = ma20 - 2 * std20
+            bb_width = upper_bb - lower_bb
+            df['bb_pct_b'] = (close - lower_bb) / bb_width.where(bb_width > 0, 1)
+
+            vol_ma5 = volume.rolling(5).mean()
+            vol_ma20 = volume.rolling(20).mean()
+            df['volume_ratio'] = vol_ma5 / vol_ma20.where(vol_ma20 > 0, 1)
+
+            df['price_ma20_ratio'] = close / ma20.where(ma20 > 0, 1)
+            ma50 = close.rolling(50).mean()
+            df['price_ma50_ratio'] = close / ma50.where(ma50 > 0, 1)
+            ma200 = close.rolling(200).mean()
+            df['price_ma200_ratio'] = close / ma200.where(ma200 > 0, 1)
+
+            tr1 = high - low
+            tr2 = (high - close.shift(1)).abs()
+            tr3 = (low - close.shift(1)).abs()
+            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+            atr_14 = tr.rolling(14).mean()
+            atr_50 = tr.rolling(50).mean()
+            df['atr_ratio'] = atr_14 / atr_50.where(atr_50 > 0, 1)
+
+            df['volatility_20d'] = df['return_1d'].rolling(20).std()
+
+            df['dow'] = df.index.dayofweek
+            for d in range(5):
+                df[f'dow_{d}'] = (df['dow'] == d).astype(int)
+
+            df['month'] = df.index.month
+            for m in range(1, 13):
+                df[f'month_{m}'] = (df['month'] == m).astype(int)
+
+            df['target'] = (close.shift(-1) > close).astype(int)
+
+            feature_cols = [
+                'rsi', 'macd_hist_norm', 'bb_pct_b', 'volume_ratio',
+                'price_ma20_ratio', 'price_ma50_ratio', 'price_ma200_ratio',
+                'return_1d', 'return_5d', 'return_20d',
+                'atr_ratio', 'volatility_20d',
+            ] + [f'dow_{d}' for d in range(5)] + [f'month_{m}' for m in range(1, 13)]
+
+            df_clean = df.dropna(subset=feature_cols + ['target'])
+
+            if len(df_clean) < 200:
+                return self._empty_ml_result()
+
+            X = df_clean[feature_cols].values
+            y = df_clean['target'].values
+
+            split_idx = int(len(X) * 0.8)
+            X_train, X_val = X[:split_idx], X[split_idx:]
+            y_train, y_val = y[:split_idx], y[split_idx:]
+
+            model = RandomForestClassifier(
+                n_estimators=100,
+                max_depth=10,
+                min_samples_leaf=5,
+                random_state=42,
+                n_jobs=-1
+            )
+            model.fit(X_train, y_train)
+
+            accuracy = float(model.score(X_val, y_val))
+
+            latest_features = df[feature_cols].iloc[-1:]
+            if latest_features.isnull().any(axis=1).iloc[0]:
+                return self._empty_ml_result()
+
+            proba = model.predict_proba(latest_features.values)[0]
+            prob_positive = float(proba[1]) if len(proba) > 1 else 0.5
+
+            signal = (prob_positive - 0.5) * 2.0
+            signal = round(max(-1.0, min(1.0, signal)), 3)
+
+            accuracy_multiplier = max(0.0, min(1.0, (accuracy - 0.5) * 4.0))
+            adjusted_signal = round(signal * max(0.3, accuracy_multiplier), 3)
+
+            return {
+                'signal': adjusted_signal,
+                'raw_signal': signal,
+                'probability_positive': round(prob_positive, 3),
+                'model_accuracy': round(accuracy * 100, 1),
+                'training_samples': len(X_train),
+                'validation_samples': len(X_val),
+                'interpretation': self._ml_interpretation(adjusted_signal, accuracy),
+            }
+        except Exception:
+            return self._empty_ml_result()
+
+    @staticmethod
+    def _ml_interpretation(signal, accuracy):
+        acc_pct = round(accuracy * 100, 1)
+        if abs(signal) < 0.1:
+            direction = 'neutral'
+        elif signal > 0:
+            direction = 'bullish'
+        else:
+            direction = 'bearish'
+        return f'ML model ({acc_pct}% accurate) predicts {direction}'
+
+    def _empty_ml_result(self):
+        return {
+            'signal': 0.0,
+            'raw_signal': 0.0,
+            'probability_positive': 0.5,
+            'model_accuracy': 50.0,
+            'training_samples': 0,
+            'validation_samples': 0,
+            'interpretation': 'Insufficient data for ML model',
+        }
+
     def analyze_sentiment(self):
         try:
             articles = self.stock.get_news(limit=25)
@@ -525,7 +757,7 @@ class StockPredictor:
 
             for article in articles:
                 sentiment = article.get('sentiment', 'neutral')
-                score = sentiment_map.get(sentiment, 0.0)
+                score = article.get('sentiment_score', sentiment_map.get(sentiment, 0.0))
                 published = article.get('published', 0)
 
                 if published > 0:
@@ -590,8 +822,12 @@ class StockPredictor:
         bollinger = self.analyze_bollinger()
         volume_trend = self.analyze_volume_trend()
         atr = self.analyze_atr()
+        historical_pattern = self.analyze_historical_pattern()
+        ml_result = self.analyze_ml()
 
         signals = {
+            'historical_pattern': historical_pattern.get('signal', 0.0),
+            'ml_prediction': ml_result.get('signal', 0.0),
             'weekday': weekday.get('signal', 0.0),
             'seasonal': seasonal.get('signal', 0.0),
             'weekly_trend': 0.0,
@@ -640,6 +876,20 @@ class StockPredictor:
         confidence = round(min(95.0, max(15.0, raw_confidence * 100 + 15 - (disagreement_penalty * 100))), 1)
 
         signal_breakdown = {
+            'historical_pattern': {
+                'name': 'Historical Pattern',
+                'signal': signals['historical_pattern'],
+                'label': self._signal_label(signals['historical_pattern']),
+                'weight': self.WEIGHTS['historical_pattern'],
+                'detail': historical_pattern.get('interpretation', 'N/A')
+            },
+            'ml_prediction': {
+                'name': 'ML Prediction',
+                'signal': signals['ml_prediction'],
+                'label': self._signal_label(signals['ml_prediction']),
+                'weight': self.WEIGHTS['ml_prediction'],
+                'detail': ml_result.get('interpretation', 'N/A')
+            },
             'weekday': {
                 'name': 'Day-of-Week Pattern',
                 'signal': signals['weekday'],
@@ -733,6 +983,8 @@ class StockPredictor:
             'seasonal_analysis': seasonal,
             'technical_analysis': technical,
             'sentiment_analysis': sentiment,
+            'historical_analysis': historical_pattern,
+            'ml_analysis': ml_result,
             'summary': summary,
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'disclaimer': 'This is a statistical analysis for educational purposes only. '
@@ -758,6 +1010,8 @@ class StockPredictor:
 
         strongest_key = max(signals, key=lambda k: abs(signals[k]))
         name_map = {
+            'historical_pattern': 'historical patterns',
+            'ml_prediction': 'ML model prediction',
             'weekday': 'day-of-week patterns',
             'seasonal': 'seasonal trends',
             'weekly_trend': 'weekly momentum',

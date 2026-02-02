@@ -153,7 +153,9 @@ class StockData:
                     'related_tickers': []
                 }
 
-                article['sentiment'] = self._analyze_sentiment(article['title'])
+                sentiment_result = self._analyze_sentiment(article['title'])
+                article['sentiment'] = sentiment_result['label']
+                article['sentiment_score'] = sentiment_result['score']
                 articles.append(article)
 
             return articles
@@ -169,7 +171,10 @@ class StockData:
             'growth', 'profit', 'beat', 'exceed', 'upgrade', 'buy', 'strong',
             'record', 'high', 'success', 'win', 'breakthrough', 'innovation',
             'positive', 'optimistic', 'confidence', 'recovery', 'outperform',
-            'momentum', 'upside', 'bullish', 'dividend', 'breakout', 'expand'
+            'momentum', 'upside', 'bullish', 'dividend', 'breakout', 'expand',
+            'accelerate', 'approval', 'acquisition', 'synergy', 'rebound',
+            'upbeat', 'robust', 'exceeded', 'milestone', 'favorable',
+            'catalyst', 'turnaround', 'top', 'leading', 'surpass'
         ]
 
         negative_words = [
@@ -177,21 +182,28 @@ class StockData:
             'miss', 'fail', 'downgrade', 'sell', 'weak', 'low', 'concern',
             'fear', 'risk', 'warning', 'cut', 'layoff', 'lawsuit', 'fraud',
             'investigation', 'negative', 'pessimistic', 'recession', 'crisis',
-            'bearish', 'downside', 'default', 'bankruptcy', 'slump', 'plummet'
+            'bearish', 'downside', 'default', 'bankruptcy', 'slump', 'plummet',
+            'downtrend', 'overvalued', 'headwind', 'deteriorate', 'underperform',
+            'volatility', 'uncertainty', 'stagnant', 'dilution', 'deficit',
+            'impairment', 'shortfall', 'suspension', 'penalty', 'recall'
         ]
 
         positive_phrases = [
             'beat expectations', 'exceeded estimates', 'raised guidance',
             'strong earnings', 'record revenue', 'all-time high',
             'buy rating', 'price target raised', 'dividend increase',
-            'share buyback', 'strong demand', 'revenue growth'
+            'share buyback', 'strong demand', 'revenue growth',
+            'above consensus', 'market outperform', 'positive outlook',
+            'revenue beat', 'strong guidance', 'margin expansion'
         ]
 
         negative_phrases = [
             'missed earnings', 'missed expectations', 'lowered guidance',
             'price target cut', 'revenue miss', 'profit warning',
             'going concern', 'debt default', 'sec investigation',
-            'class action', 'supply chain disruption', 'margin pressure'
+            'class action', 'supply chain disruption', 'margin pressure',
+            'below expectations', 'revenue decline', 'margin compression',
+            'earnings miss', 'guidance cut', 'market underperform'
         ]
 
         negation_words = {'not', 'no', 'never', 'neither', 'hardly', 'barely',
@@ -203,11 +215,11 @@ class StockData:
 
         for phrase in positive_phrases:
             if phrase in text_lower:
-                positive_count += 2
+                positive_count += 3
 
         for phrase in negative_phrases:
             if phrase in text_lower:
-                negative_count += 2
+                negative_count += 3
 
         words = text_lower.split()
         for i, word in enumerate(words):
@@ -223,9 +235,17 @@ class StockData:
                 else:
                     negative_count += 1
 
-        if positive_count > negative_count:
-            return 'positive'
-        elif negative_count > positive_count:
-            return 'negative'
+        total = positive_count + negative_count
+        if total == 0:
+            score = 0.0
         else:
-            return 'neutral'
+            score = (positive_count - negative_count) / total
+
+        if score > 0.05:
+            label = 'positive'
+        elif score < -0.05:
+            label = 'negative'
+        else:
+            label = 'neutral'
+
+        return {'label': label, 'score': round(score, 3)}
