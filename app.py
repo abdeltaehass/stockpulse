@@ -16,6 +16,14 @@ logging.basicConfig(level=logging.INFO)
 # Initialize database on startup
 init_db()
 
+# Reactivate all alerts on startup
+def reactivate_all_alerts():
+    with get_db_connection() as conn:
+        conn.execute('UPDATE price_alerts SET is_active = 1')
+    logging.info("All alerts reactivated on startup")
+
+reactivate_all_alerts()
+
 # Start background scheduler for price alerts
 start_scheduler()
 
@@ -138,8 +146,13 @@ def get_stock_history(ticker, period):
     if period not in valid_periods:
         return jsonify({'error': 'Invalid period'}), 400
 
+    interval = request.args.get('interval', None)
+    valid_intervals = ['5m', '15m', '30m', '1h', '3h']
+    if period == '1d' and interval and interval not in valid_intervals:
+        return jsonify({'error': f'Invalid interval. Use: {", ".join(valid_intervals)}'}), 400
+
     stock = StockData(ticker)
-    historical_data = stock.get_historical_data(period=period)
+    historical_data = stock.get_historical_data(period=period, interval=interval)
 
     if historical_data is None or historical_data.empty:
         return jsonify({'error': 'No data available'}), 404

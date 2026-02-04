@@ -32,6 +32,9 @@ def start_scheduler():
     # Schedule flash crash detection
     _schedule_crash_monitor()
 
+    # Schedule daily baseline reset for percentage alerts
+    _schedule_baseline_reset()
+
     scheduler.start()
     logger.info(f"Scheduler started. Will check alerts every {Config.ALERT_CHECK_INTERVAL} minutes")
 
@@ -119,3 +122,19 @@ def _schedule_crash_monitor():
     )
 
     logger.info(f"Flash crash monitor scheduled every {Config.CRASH_CHECK_INTERVAL} minutes")
+
+
+def _schedule_baseline_reset():
+    """Schedule daily baseline reset at market open (9:30 AM ET)"""
+    from alert_monitor import reset_percentage_baselines
+
+    scheduler.add_job(
+        func=reset_percentage_baselines,
+        trigger=CronTrigger(hour=9, minute=30, day_of_week='mon-fri'),
+        id='daily_baseline_reset',
+        name='Reset percentage alert baselines to daily open',
+        replace_existing=True,
+        max_instances=1
+    )
+
+    logger.info("Daily baseline reset scheduled for 9:30 AM (Mon-Fri)")

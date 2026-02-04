@@ -1157,6 +1157,42 @@
             color: white;
         }
 
+        .interval-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .interval-label {
+            color: #9a9a9a;
+            font-size: 0.9rem;
+            margin-right: 8px;
+        }
+
+        .interval-btn {
+            padding: 8px 16px;
+            border: 1px solid #667eea;
+            background: var(--card-bg);
+            color: #667eea;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .interval-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .interval-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
         .chart-type-selector {
             display: flex;
             gap: 10px;
@@ -2416,6 +2452,15 @@
                     <button class="period-btn" data-period="1y">1 Year</button>
                 </div>
 
+                <div class="interval-selector" id="intervalSelector">
+                    <span class="interval-label">Interval:</span>
+                    <button class="interval-btn" data-interval="5m">5m</button>
+                    <button class="interval-btn active" data-interval="15m">15m</button>
+                    <button class="interval-btn" data-interval="30m">30m</button>
+                    <button class="interval-btn" data-interval="1h">1h</button>
+                    <button class="interval-btn" data-interval="3h">3h</button>
+                </div>
+
                 <!-- Chart Type Toggle -->
                 <div class="chart-type-selector">
                     <button class="chart-type-btn active" data-type="line">📈 Line</button>
@@ -3095,14 +3140,27 @@
             }
         });
 
-        function loadChartData(period) {
+        let currentInterval = '15m';
+
+        function loadChartData(period, interval) {
             const chartContainer = document.querySelector('.chart-container');
             const volumeContainer = document.querySelector('.volume-container');
             const chartLoading = document.querySelector('.chart-loading');
+            const intervalSelector = document.getElementById('intervalSelector');
 
             chartContainer.style.display = 'none';
             volumeContainer.style.display = 'none';
             chartLoading.classList.add('active');
+
+            if (period === '1d') {
+                intervalSelector.style.display = 'flex';
+                if (!interval) {
+                    interval = currentInterval;
+                }
+            } else {
+                intervalSelector.style.display = 'none';
+                interval = null;
+            }
 
             // Highlight active period button
             document.querySelectorAll('.period-btn').forEach(function(btn) {
@@ -3112,7 +3170,13 @@
                 }
             });
 
-            fetch('/api/stocks/' + currentTicker + '/history/' + period)
+            let url = '/api/stocks/' + currentTicker + '/history/' + period;
+            if (interval) {
+                url += '?interval=' + interval;
+                currentInterval = interval;
+            }
+
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
@@ -3565,6 +3629,19 @@
                         if (currentChartData) {
                             renderChart(currentChartData, currentChartType);
                         }
+                    });
+                });
+
+                document.querySelectorAll('.interval-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        const interval = this.getAttribute('data-interval');
+
+                        document.querySelectorAll('.interval-btn').forEach(function(b) {
+                            b.classList.remove('active');
+                        });
+                        this.classList.add('active');
+
+                        loadChartData('1d', interval);
                     });
                 });
             }, 100);

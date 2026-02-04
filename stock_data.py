@@ -81,10 +81,32 @@ class StockData:
             print(f"Error fetching crypto info for {self.ticker}: {e}")
             return None
 
-    def get_historical_data(self, period='1mo'):
+    def get_historical_data(self, period='1mo', interval=None):
         try:
-            data = self.stock.history(period=period)
-            return data
+            if period == '1d':
+                if interval is None:
+                    interval = '15m'
+                interval_map = {
+                    '5m': '5m',
+                    '15m': '15m',
+                    '30m': '30m',
+                    '1h': '60m',
+                    '3h': '60m'
+                }
+                yf_interval = interval_map.get(interval, '15m')
+                data = self.stock.history(period='1d', interval=yf_interval)
+                if interval == '3h' and not data.empty:
+                    data = data.resample('3h').agg({
+                        'Open': 'first',
+                        'High': 'max',
+                        'Low': 'min',
+                        'Close': 'last',
+                        'Volume': 'sum'
+                    }).dropna()
+                return data
+            else:
+                data = self.stock.history(period=period)
+                return data
         except Exception as e:
             print(f"Error fetching historical data for {self.ticker}: {e}")
             return None

@@ -165,3 +165,49 @@ def trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
         ''', (datetime.now().isoformat(), alert_id))
 
     logger.info(f"Alert {alert_id} deactivated and logged to history")
+
+
+def reset_percentage_baselines():
+    """Reset baseline_price to today's open for all percentage alerts.
+    Called once per day at market open (9:30 AM ET).
+    """
+    try:
+        logger.info("Starting daily baseline reset for percentage alerts")
+
+        with get_db_connection() as conn:
+            cursor = conn.execute('''
+                SELECT DISTINCT ticker
+                FROM price_alerts
+                WHERE alert_type = 'percentage' AND is_active = 1
+            ''')
+            tickers = [row['ticker'] for row in cursor.fetchall()]
+
+        if not tickers:
+            logger.info("No active percentage alerts to reset")
+            return
+
+        logger.info(f"Resetting baselines for {len(tickers)} tickers")
+
+        for ticker in tickers:
+            try:
+                stock = StockData(ticker)
+                info = stock.stock.info
+                open_price = info.get('open') or info.get('regularMarketOpen')
+
+                if open_price and open_price > 0:
+                    with get_db_connection() as conn:
+                        conn.execute('''
+                            UPDATE price_alerts
+                            SET baseline_price = ?
+                            WHERE ticker = ? AND alert_type = 'percentage' AND is_active = 1
+                        ''', (open_price, ticker))
+                    logger.info(f"Reset {ticker} baseline to ${open_price}")
+                else:
+                    logger.warning(f"Could not get open price for {ticker}")
+            except Exception as e:
+                logger.error(f"Failed to reset baseline for {ticker}: {e}")
+
+        logger.info("Daily baseline reset completed")
+
+    except Exception as e:
+        logger.error(f"Baseline reset failed: {e}", exc_info=True)
