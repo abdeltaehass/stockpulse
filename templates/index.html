@@ -1797,6 +1797,127 @@
             margin-top: 10px;
         }
 
+        .analyst-targets-section {
+            background: var(--section-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .analyst-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .analyst-header h4 {
+            color: var(--card-text);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .analyst-count {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .price-range-container {
+            margin-bottom: 25px;
+        }
+
+        .price-range-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--card-secondary);
+        }
+
+        .price-range-bar {
+            position: relative;
+            height: 24px;
+            background: linear-gradient(90deg, #ef5350 0%, #ffeb3b 50%, #66bb6a 100%);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .price-marker {
+            position: absolute;
+            top: -4px;
+            width: 4px;
+            height: 32px;
+            background: var(--card-text);
+            border-radius: 2px;
+            transform: translateX(-50%);
+        }
+
+        .price-marker::after {
+            content: attr(data-label);
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            white-space: nowrap;
+            color: var(--card-text);
+            font-weight: 600;
+        }
+
+        .price-range-values {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--card-text);
+        }
+
+        .price-range-values .low { color: #ef5350; }
+        .price-range-values .high { color: #66bb6a; }
+
+        .projections-table {
+            overflow-x: auto;
+        }
+
+        .projections-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .projections-table th,
+        .projections-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--input-border);
+            color: var(--card-text);
+        }
+
+        .projections-table th {
+            background: var(--card-bg);
+            font-weight: 600;
+            color: var(--card-secondary);
+        }
+
+        .projections-table .upside {
+            color: #66bb6a;
+            font-weight: 600;
+        }
+
+        .projections-table .downside {
+            color: #ef5350;
+            font-weight: 600;
+        }
+
+        .projection-range {
+            font-size: 0.8rem;
+            color: var(--card-secondary);
+        }
+
         @media (max-width: 768px) {
             .prediction-recommendation {
                 flex-direction: column;
@@ -2538,6 +2659,44 @@
                             <div class="pattern-chart-container">
                                 <h4>Monthly Seasonal Returns</h4>
                                 <canvas id="seasonalChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="analystTargets" class="analyst-targets-section" style="display: none;">
+                            <div class="analyst-header">
+                                <h4>Wall Street Analyst Price Targets</h4>
+                                <span class="analyst-count" id="analystCount">0 analysts</span>
+                            </div>
+                            <div class="price-range-container">
+                                <div class="price-range-labels">
+                                    <span>Low Target</span>
+                                    <span>Current</span>
+                                    <span>High Target</span>
+                                </div>
+                                <div class="price-range-bar" id="priceRangeBar">
+                                    <div class="price-marker" id="currentPriceMarker" data-label="Current"></div>
+                                    <div class="price-marker" id="meanTargetMarker" data-label="Mean" style="background: #667eea;"></div>
+                                </div>
+                                <div class="price-range-values">
+                                    <span class="low" id="targetLowValue">$0</span>
+                                    <span id="currentPriceValue">$0</span>
+                                    <span class="high" id="targetHighValue">$0</span>
+                                </div>
+                            </div>
+                            <div class="projections-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Period</th>
+                                            <th>Low Est.</th>
+                                            <th>Mean Est.</th>
+                                            <th>High Est.</th>
+                                            <th>Potential</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="projectionsTableBody">
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
@@ -4260,8 +4419,60 @@
 
             renderWeekdayChart(prediction.weekday_analysis);
             renderSeasonalChart(prediction.seasonal_analysis);
+            renderAnalystTargets(prediction.analyst_targets);
 
             document.getElementById('predictionDisclaimer').textContent = prediction.disclaimer;
+        }
+
+        function renderAnalystTargets(analystData) {
+            const section = document.getElementById('analystTargets');
+
+            if (!analystData || !analystData.num_analysts) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+
+            document.getElementById('analystCount').textContent =
+                analystData.num_analysts + ' analyst' + (analystData.num_analysts > 1 ? 's' : '');
+
+            document.getElementById('targetLowValue').textContent = '$' + analystData.target_low.toFixed(2);
+            document.getElementById('currentPriceValue').textContent = '$' + analystData.current_price.toFixed(2);
+            document.getElementById('targetHighValue').textContent = '$' + analystData.target_high.toFixed(2);
+
+            const range = analystData.target_high - analystData.target_low;
+            const currentPos = ((analystData.current_price - analystData.target_low) / range) * 100;
+            const meanPos = ((analystData.target_mean - analystData.target_low) / range) * 100;
+
+            const currentMarker = document.getElementById('currentPriceMarker');
+            const meanMarker = document.getElementById('meanTargetMarker');
+
+            currentMarker.style.left = Math.max(0, Math.min(100, currentPos)) + '%';
+            currentMarker.setAttribute('data-label', '$' + analystData.current_price.toFixed(0));
+
+            meanMarker.style.left = Math.max(0, Math.min(100, meanPos)) + '%';
+            meanMarker.setAttribute('data-label', 'Mean $' + analystData.target_mean.toFixed(0));
+
+            const tbody = document.getElementById('projectionsTableBody');
+            let html = '';
+
+            for (const proj of analystData.projections) {
+                const upsideClass = proj.upside_pct >= 0 ? 'upside' : 'downside';
+                const upsideSign = proj.upside_pct >= 0 ? '+' : '';
+
+                html += `
+                    <tr>
+                        <td><strong>${proj.period}</strong></td>
+                        <td>$${proj.low.toFixed(2)}</td>
+                        <td>$${proj.mean.toFixed(2)}</td>
+                        <td>$${proj.high.toFixed(2)}</td>
+                        <td class="${upsideClass}">${upsideSign}${proj.upside_pct.toFixed(1)}%</td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = html;
         }
 
         const referenceLinePlugin = {

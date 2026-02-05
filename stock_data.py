@@ -185,6 +185,32 @@ class StockData:
             print(f"Error fetching news for {self.ticker}: {e}")
             return []
 
+    def get_analyst_targets(self):
+        try:
+            info = self.stock.info
+            current = self.get_current_price()
+
+            target_low = info.get('targetLowPrice')
+            target_high = info.get('targetHighPrice')
+            target_mean = info.get('targetMeanPrice')
+            target_median = info.get('targetMedianPrice')
+            num_analysts = info.get('numberOfAnalystOpinions', 0)
+
+            if not target_mean or not current or num_analysts == 0:
+                return None
+
+            return {
+                'current_price': current,
+                'target_low': target_low,
+                'target_high': target_high,
+                'target_mean': target_mean,
+                'target_median': target_median,
+                'num_analysts': num_analysts
+            }
+        except Exception as e:
+            print(f"Error fetching analyst targets for {self.ticker}: {e}")
+            return None
+
     def _analyze_sentiment(self, text):
         text_lower = text.lower()
 

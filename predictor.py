@@ -973,6 +973,8 @@ class StockPredictor:
             recommendation, confidence, combined_score, signals, technical, seasonal, weekday
         )
 
+        analyst_targets = self.get_analyst_targets()
+
         return {
             'ticker': self.ticker,
             'recommendation': recommendation,
@@ -985,6 +987,7 @@ class StockPredictor:
             'sentiment_analysis': sentiment,
             'historical_analysis': historical_pattern,
             'ml_analysis': ml_result,
+            'analyst_targets': analyst_targets,
             'summary': summary,
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'disclaimer': 'This is a statistical analysis for educational purposes only. '
@@ -1069,4 +1072,53 @@ class StockPredictor:
             'ma_trend': {'ma20': 0, 'ma50': 0, 'ma200': 0, 'current_price': 0,
                          'above_ma20': False, 'above_ma50': False, 'above_ma200': False,
                          'position': 'Unknown', 'crossovers': [], 'signal': 0.0}
+        }
+
+    def get_analyst_targets(self):
+        targets = self.stock.get_analyst_targets()
+        if not targets:
+            return None
+
+        current = targets['current_price']
+        target_mean = targets['target_mean']
+        target_low = targets['target_low']
+        target_high = targets['target_high']
+
+        annual_change = target_mean - current
+        low_change = target_low - current
+        high_change = target_high - current
+
+        projections = []
+
+        periods = [
+            {'name': '1 Week', 'fraction': 1/52},
+            {'name': '1 Month', 'fraction': 1/12},
+            {'name': '6 Months', 'fraction': 0.5},
+            {'name': '1 Year', 'fraction': 1.0},
+            {'name': '2 Years', 'fraction': 2.0},
+        ]
+
+        for period in periods:
+            frac = period['fraction']
+            proj_low = round(current + low_change * frac, 2)
+            proj_mean = round(current + annual_change * frac, 2)
+            proj_high = round(current + high_change * frac, 2)
+
+            projections.append({
+                'period': period['name'],
+                'low': proj_low,
+                'mean': proj_mean,
+                'high': proj_high,
+                'upside_pct': round((proj_mean - current) / current * 100, 1)
+            })
+
+        return {
+            'current_price': current,
+            'target_low': target_low,
+            'target_high': target_high,
+            'target_mean': target_mean,
+            'target_median': targets['target_median'],
+            'num_analysts': targets['num_analysts'],
+            'projections': projections,
+            'upside_pct': round((target_mean - current) / current * 100, 1)
         }
