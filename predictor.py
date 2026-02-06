@@ -989,9 +989,7 @@ class StockPredictor:
             'ml_analysis': ml_result,
             'analyst_targets': analyst_targets,
             'summary': summary,
-            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'disclaimer': 'This is a statistical analysis for educational purposes only. '
-                          'Not financial advice. Past performance does not guarantee future results.'
+            'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
     @staticmethod
@@ -1093,9 +1091,7 @@ class StockPredictor:
         periods = [
             {'name': '1 Week', 'fraction': 1/52},
             {'name': '1 Month', 'fraction': 1/12},
-            {'name': '6 Months', 'fraction': 0.5},
             {'name': '1 Year', 'fraction': 1.0},
-            {'name': '2 Years', 'fraction': 2.0},
         ]
 
         for period in periods:

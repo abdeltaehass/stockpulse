@@ -306,6 +306,57 @@
             color: var(--card-text);
         }
 
+        .week52-range {
+            margin-top: 15px;
+            padding: 12px;
+            background: var(--section-bg);
+            border-radius: 10px;
+        }
+
+        .week52-label {
+            font-size: 0.8rem;
+            color: var(--card-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .week52-bar {
+            position: relative;
+            height: 8px;
+            background: var(--input-border);
+            border-radius: 4px;
+            margin-bottom: 6px;
+        }
+
+        .week52-fill {
+            position: absolute;
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #ef5350, #ffeb3b, #66bb6a);
+        }
+
+        .week52-marker {
+            position: absolute;
+            top: -3px;
+            width: 14px;
+            height: 14px;
+            background: var(--card-text);
+            border: 2px solid var(--card-bg);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .week52-values {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .week52-values .w52-low { color: #ef5350; font-weight: 600; }
+        .week52-values .w52-high { color: #66bb6a; font-weight: 600; }
+
         .loading {
             text-align: center;
             color: white;
@@ -1787,16 +1838,6 @@
             max-height: 180px;
         }
 
-        .prediction-disclaimer {
-            font-size: 0.75rem;
-            color: var(--card-secondary);
-            text-align: center;
-            font-style: italic;
-            padding: 10px;
-            border-top: 1px solid var(--input-border, #e0e0e0);
-            margin-top: 10px;
-        }
-
         .analyst-targets-section {
             background: var(--section-bg);
             border-radius: 12px;
@@ -2649,22 +2690,9 @@
 
                         <div class="prediction-summary" id="predictionSummary"></div>
 
-                        <div class="signal-breakdown" id="signalBreakdown"></div>
-
-                        <div class="pattern-charts">
-                            <div class="pattern-chart-container">
-                                <h4>Day-of-Week Returns</h4>
-                                <canvas id="weekdayChart"></canvas>
-                            </div>
-                            <div class="pattern-chart-container">
-                                <h4>Monthly Seasonal Returns</h4>
-                                <canvas id="seasonalChart"></canvas>
-                            </div>
-                        </div>
-
                         <div id="analystTargets" class="analyst-targets-section" style="display: none;">
                             <div class="analyst-header">
-                                <h4>Wall Street Analyst Price Targets</h4>
+                                <h4>Wall Street Price Targets</h4>
                                 <span class="analyst-count" id="analystCount">0 analysts</span>
                             </div>
                             <div class="price-range-container">
@@ -2700,7 +2728,19 @@
                             </div>
                         </div>
 
-                        <div class="prediction-disclaimer" id="predictionDisclaimer"></div>
+                        <div class="signal-breakdown" id="signalBreakdown"></div>
+
+                        <div class="pattern-charts">
+                            <div class="pattern-chart-container">
+                                <h4>Day-of-Week Returns</h4>
+                                <canvas id="weekdayChart"></canvas>
+                            </div>
+                            <div class="pattern-chart-container">
+                                <h4>Monthly Seasonal Returns</h4>
+                                <canvas id="seasonalChart"></canvas>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -3174,6 +3214,22 @@
                                     '<div class="detail-value">' + formatVolume(stock.volume) + '</div>' +
                                 '</div>' +
                             '</div>' +
+                            (stock.week52_high && stock.week52_low ? (function() {
+                                var range = stock.week52_high - stock.week52_low;
+                                var pos = range > 0 ? ((stock.current_price - stock.week52_low) / range * 100) : 50;
+                                pos = Math.max(0, Math.min(100, pos));
+                                return '<div class="week52-range">' +
+                                    '<div class="week52-label">52-Week Range</div>' +
+                                    '<div class="week52-bar">' +
+                                        '<div class="week52-fill" style="width: 100%;"></div>' +
+                                        '<div class="week52-marker" style="left: ' + pos + '%;"></div>' +
+                                    '</div>' +
+                                    '<div class="week52-values">' +
+                                        '<span class="w52-low">$' + formatNumber(stock.week52_low) + '</span>' +
+                                        '<span class="w52-high">$' + formatNumber(stock.week52_high) + '</span>' +
+                                    '</div>' +
+                                '</div>';
+                            })() : '') +
                         '</div>';
                         
                         container.innerHTML += card;
@@ -4420,8 +4476,6 @@
             renderWeekdayChart(prediction.weekday_analysis);
             renderSeasonalChart(prediction.seasonal_analysis);
             renderAnalystTargets(prediction.analyst_targets);
-
-            document.getElementById('predictionDisclaimer').textContent = prediction.disclaimer;
         }
 
         function renderAnalystTargets(analystData) {

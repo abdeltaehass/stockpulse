@@ -32,6 +32,8 @@ class StockData:
                 'day_high': info.get('dayHigh', 'N/A'),
                 'day_low': info.get('dayLow', 'N/A'),
                 'volume': info.get('volume', 'N/A'),
+                'week52_high': info.get('fiftyTwoWeekHigh', None),
+                'week52_low': info.get('fiftyTwoWeekLow', None),
             }
             
             if current_price and stock_data['previous_close'] != 'N/A':
