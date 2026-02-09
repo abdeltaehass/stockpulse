@@ -2,23 +2,26 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from stock_data import StockData
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+import yfinance as yf
 
 
 class StockPredictor:
     WEIGHTS = {
-        'historical_pattern': 0.12,
-        'ml_prediction':      0.10,
-        'rsi':                0.12,
-        'ma_trend':           0.12,
-        'macd':               0.10,
-        'sentiment':          0.10,
-        'bollinger':          0.08,
-        'weekly_trend':       0.07,
+        'ml_prediction':      0.14,
+        'rsi':                0.10,
+        'ma_trend':           0.10,
+        'macd':               0.09,
+        'historical_pattern': 0.09,
+        'sentiment':          0.08,
+        'bollinger':          0.07,
+        'stochastic':         0.07,
+        'relative_strength':  0.06,
+        'weekly_trend':       0.06,
         'volume_trend':       0.06,
-        'weekday':            0.05,
-        'seasonal':           0.04,
         'atr_volatility':     0.04,
+        'weekday':            0.02,
+        'seasonal':           0.02,
     }
 
     def __init__(self, ticker):
@@ -434,7 +437,24 @@ class StockPredictor:
                 else:
                     signal = 0.0
 
+            divergence = ''
+            if len(close) >= 20:
+                obv = (np.sign(close.diff()) * volume).fillna(0).cumsum()
+                price_trend = float(close.iloc[-1]) - float(close.iloc[-20])
+                obv_trend = float(obv.iloc[-1]) - float(obv.iloc[-20])
+
+                if price_trend > 0 and obv_trend < 0:
+                    divergence = 'Bearish Divergence'
+                    signal = max(-1.0, signal - 0.3)
+                elif price_trend < 0 and obv_trend > 0:
+                    divergence = 'Bullish Divergence'
+                    signal = min(1.0, signal + 0.3)
+
             signal = round(max(-1.0, min(1.0, signal)), 3)
+
+            interp = f'{trend} ({volume_ratio:.1f}x avg)'
+            if divergence:
+                interp += f' - {divergence}'
 
             return {
                 'signal': signal,
@@ -443,7 +463,7 @@ class StockPredictor:
                 'avg_volume_5d': int(avg_vol_5),
                 'today_volume': int(today_vol),
                 'trend': trend,
-                'interpretation': f'{trend} ({volume_ratio:.1f}x avg)'
+                'interpretation': interp
             }
         except Exception:
             return {'signal': 0.0, 'volume_ratio': 1.0, 'trend': 'Normal',
@@ -501,6 +521,104 @@ class StockPredictor:
         except Exception:
             return {'signal': 0.0, 'atr': 0, 'atr_pct': 0,
                     'volatility': 'Unknown', 'interpretation': 'Error'}
+
+    def analyze_stochastic(self):
+        try:
+            hist = self._get_history_2y()
+            if hist is None or len(hist) < 30:
+                return {'signal': 0.0, 'k': 50, 'd': 50,
+                        'interpretation': 'Insufficient Data'}
+
+            close = hist['Close']
+            high = hist['High']
+            low = hist['Low']
+
+            low_14 = low.rolling(14).min()
+            high_14 = high.rolling(14).max()
+            hl_range = high_14 - low_14
+            k = ((close - low_14) / hl_range.where(hl_range > 0, 1)) * 100
+            d = k.rolling(3).mean()
+
+            k_val = float(k.iloc[-1])
+            d_val = float(d.iloc[-1])
+
+            k_prev = float(k.iloc[-2])
+            d_prev = float(d.iloc[-2])
+
+            if k_val < 20:
+                signal = 0.5 + (20 - k_val) / 40
+                interp = 'Oversold'
+            elif k_val > 80:
+                signal = -0.5 - (k_val - 80) / 40
+                interp = 'Overbought'
+            else:
+                signal = (50 - k_val) / 60
+                interp = 'Neutral'
+
+            if k_prev < d_prev and k_val > d_val and k_val < 30:
+                signal = min(1.0, signal + 0.3)
+                interp = 'Bullish Crossover'
+            elif k_prev > d_prev and k_val < d_val and k_val > 70:
+                signal = max(-1.0, signal - 0.3)
+                interp = 'Bearish Crossover'
+
+            signal = round(max(-1.0, min(1.0, signal)), 3)
+
+            return {
+                'signal': signal,
+                'k': round(k_val, 1),
+                'd': round(d_val, 1),
+                'interpretation': f'{interp} (%K: {k_val:.1f}, %D: {d_val:.1f})'
+            }
+        except Exception:
+            return {'signal': 0.0, 'k': 50, 'd': 50,
+                    'interpretation': 'Error'}
+
+    def analyze_relative_strength(self):
+        try:
+            hist = self._get_history_2y()
+            if hist is None or len(hist) < 60:
+                return {'signal': 0.0, 'rs_ratio': 1.0,
+                        'interpretation': 'Insufficient Data'}
+
+            spy = yf.Ticker('SPY')
+            spy_hist = spy.history(period='2y')
+
+            if spy_hist is None or len(spy_hist) < 60:
+                return {'signal': 0.0, 'rs_ratio': 1.0,
+                        'interpretation': 'Market data unavailable'}
+
+            stock_20d = float(hist['Close'].pct_change(20).iloc[-1])
+            spy_20d = float(spy_hist['Close'].pct_change(20).iloc[-1])
+
+            stock_5d = float(hist['Close'].pct_change(5).iloc[-1])
+            spy_5d = float(spy_hist['Close'].pct_change(5).iloc[-1])
+
+            rs_20d = stock_20d - spy_20d
+            rs_5d = stock_5d - spy_5d
+
+            combined = rs_20d * 0.6 + rs_5d * 0.4
+
+            signal = max(-1.0, min(1.0, combined / 0.05))
+            signal = round(signal, 3)
+
+            if combined > 0.02:
+                interp = 'Outperforming market'
+            elif combined < -0.02:
+                interp = 'Underperforming market'
+            else:
+                interp = 'In line with market'
+
+            return {
+                'signal': signal,
+                'rs_ratio': round(combined * 100, 2),
+                'stock_20d': round(stock_20d * 100, 2),
+                'spy_20d': round(spy_20d * 100, 2),
+                'interpretation': f'{interp} ({combined*100:+.1f}% vs SPY)'
+            }
+        except Exception:
+            return {'signal': 0.0, 'rs_ratio': 1.0,
+                    'interpretation': 'Error'}
 
     def analyze_historical_pattern(self):
         try:
@@ -601,6 +719,7 @@ class StockPredictor:
 
             df['return_1d'] = close.pct_change(1)
             df['return_5d'] = close.pct_change(5)
+            df['return_10d'] = close.pct_change(10)
             df['return_20d'] = close.pct_change(20)
 
             delta = close.diff()
@@ -623,10 +742,15 @@ class StockPredictor:
             lower_bb = ma20 - 2 * std20
             bb_width = upper_bb - lower_bb
             df['bb_pct_b'] = (close - lower_bb) / bb_width.where(bb_width > 0, 1)
+            df['bb_width_ratio'] = bb_width / ma20.where(ma20 > 0, 1)
 
             vol_ma5 = volume.rolling(5).mean()
             vol_ma20 = volume.rolling(20).mean()
             df['volume_ratio'] = vol_ma5 / vol_ma20.where(vol_ma20 > 0, 1)
+
+            obv = (np.sign(close.diff()) * volume).fillna(0).cumsum()
+            obv_ma20 = obv.rolling(20).mean()
+            df['obv_slope'] = (obv - obv_ma20) / close.where(close > 0, 1)
 
             df['price_ma20_ratio'] = close / ma20.where(ma20 > 0, 1)
             ma50 = close.rolling(50).mean()
@@ -644,6 +768,31 @@ class StockPredictor:
 
             df['volatility_20d'] = df['return_1d'].rolling(20).std()
 
+            low_14 = low.rolling(14).min()
+            high_14 = high.rolling(14).max()
+            hl_range = high_14 - low_14
+            df['stoch_k'] = ((close - low_14) / hl_range.where(hl_range > 0, 1)) * 100
+            df['stoch_d'] = df['stoch_k'].rolling(3).mean()
+
+            plus_dm = high.diff()
+            minus_dm = -low.diff()
+            plus_dm = plus_dm.where((plus_dm > minus_dm) & (plus_dm > 0), 0.0)
+            minus_dm = minus_dm.where((minus_dm > plus_dm) & (minus_dm > 0), 0.0)
+            atr_smooth = tr.rolling(14).mean()
+            plus_di = 100 * (plus_dm.rolling(14).mean() / atr_smooth.where(atr_smooth > 0, 1))
+            minus_di = 100 * (minus_dm.rolling(14).mean() / atr_smooth.where(atr_smooth > 0, 1))
+            di_sum = plus_di + minus_di
+            df['adx'] = (((plus_di - minus_di).abs() / di_sum.where(di_sum > 0, 1)) * 100).rolling(14).mean()
+            df['di_diff'] = plus_di - minus_di
+
+            hl_range_daily = high - low
+            df['close_position'] = ((close - low) / hl_range_daily.where(hl_range_daily > 0, 1))
+
+            df['roc_10'] = close.pct_change(10) * 100
+
+            ma20_slope = ma20.diff(5) / ma20.shift(5).where(ma20.shift(5) > 0, 1)
+            df['ma20_slope'] = ma20_slope * 100
+
             df['dow'] = df.index.dayofweek
             for d in range(5):
                 df[f'dow_{d}'] = (df['dow'] == d).astype(int)
@@ -655,10 +804,13 @@ class StockPredictor:
             df['target'] = (close.shift(-1) > close).astype(int)
 
             feature_cols = [
-                'rsi', 'macd_hist_norm', 'bb_pct_b', 'volume_ratio',
+                'rsi', 'macd_hist_norm', 'bb_pct_b', 'bb_width_ratio',
+                'volume_ratio', 'obv_slope',
                 'price_ma20_ratio', 'price_ma50_ratio', 'price_ma200_ratio',
-                'return_1d', 'return_5d', 'return_20d',
+                'return_1d', 'return_5d', 'return_10d', 'return_20d',
                 'atr_ratio', 'volatility_20d',
+                'stoch_k', 'stoch_d', 'adx', 'di_diff',
+                'close_position', 'roc_10', 'ma20_slope',
             ] + [f'dow_{d}' for d in range(5)] + [f'month_{m}' for m in range(1, 13)]
 
             df_clean = df.dropna(subset=feature_cols + ['target'])
@@ -669,20 +821,38 @@ class StockPredictor:
             X = df_clean[feature_cols].values
             y = df_clean['target'].values
 
-            split_idx = int(len(X) * 0.8)
-            X_train, X_val = X[:split_idx], X[split_idx:]
-            y_train, y_val = y[:split_idx], y[split_idx:]
+            fold_size = len(X) // 5
+            accuracies = []
+            for fold in range(3):
+                train_end = fold_size * (fold + 2)
+                val_end = min(train_end + fold_size, len(X))
+                if val_end <= train_end:
+                    continue
+                X_tr, y_tr = X[:train_end], y[:train_end]
+                X_vl, y_vl = X[train_end:val_end], y[train_end:val_end]
+                fold_model = GradientBoostingClassifier(
+                    n_estimators=150,
+                    learning_rate=0.05,
+                    max_depth=4,
+                    min_samples_leaf=10,
+                    subsample=0.8,
+                    random_state=42
+                )
+                fold_model.fit(X_tr, y_tr)
+                accuracies.append(float(fold_model.score(X_vl, y_vl)))
 
-            model = RandomForestClassifier(
-                n_estimators=100,
-                max_depth=10,
-                min_samples_leaf=5,
-                random_state=42,
-                n_jobs=-1
+            avg_accuracy = np.mean(accuracies) if accuracies else 0.5
+
+            model = GradientBoostingClassifier(
+                n_estimators=150,
+                learning_rate=0.05,
+                max_depth=4,
+                min_samples_leaf=10,
+                subsample=0.8,
+                random_state=42
             )
-            model.fit(X_train, y_train)
-
-            accuracy = float(model.score(X_val, y_val))
+            split_idx = int(len(X) * 0.85)
+            model.fit(X[:split_idx], y[:split_idx])
 
             latest_features = df[feature_cols].iloc[-1:]
             if latest_features.isnull().any(axis=1).iloc[0]:
@@ -694,17 +864,17 @@ class StockPredictor:
             signal = (prob_positive - 0.5) * 2.0
             signal = round(max(-1.0, min(1.0, signal)), 3)
 
-            accuracy_multiplier = max(0.0, min(1.0, (accuracy - 0.5) * 4.0))
+            accuracy_multiplier = max(0.0, min(1.0, (avg_accuracy - 0.5) * 4.0))
             adjusted_signal = round(signal * max(0.3, accuracy_multiplier), 3)
 
             return {
                 'signal': adjusted_signal,
                 'raw_signal': signal,
                 'probability_positive': round(prob_positive, 3),
-                'model_accuracy': round(accuracy * 100, 1),
-                'training_samples': len(X_train),
-                'validation_samples': len(X_val),
-                'interpretation': self._ml_interpretation(adjusted_signal, accuracy),
+                'model_accuracy': round(avg_accuracy * 100, 1),
+                'training_samples': split_idx,
+                'validation_samples': len(X) - split_idx,
+                'interpretation': self._ml_interpretation(adjusted_signal, avg_accuracy),
             }
         except Exception:
             return self._empty_ml_result()
@@ -824,20 +994,24 @@ class StockPredictor:
         atr = self.analyze_atr()
         historical_pattern = self.analyze_historical_pattern()
         ml_result = self.analyze_ml()
+        stochastic = self.analyze_stochastic()
+        relative_strength = self.analyze_relative_strength()
 
         signals = {
-            'historical_pattern': historical_pattern.get('signal', 0.0),
             'ml_prediction': ml_result.get('signal', 0.0),
-            'weekday': weekday.get('signal', 0.0),
-            'seasonal': seasonal.get('signal', 0.0),
-            'weekly_trend': 0.0,
             'rsi': technical.get('rsi', {}).get('signal', 0.0),
-            'macd': technical.get('macd', {}).get('signal', 0.0),
             'ma_trend': technical.get('ma_trend', {}).get('signal', 0.0),
+            'macd': technical.get('macd', {}).get('signal', 0.0),
+            'historical_pattern': historical_pattern.get('signal', 0.0),
             'sentiment': sentiment.get('signal', 0.0),
             'bollinger': bollinger.get('signal', 0.0),
+            'stochastic': stochastic.get('signal', 0.0),
+            'relative_strength': relative_strength.get('signal', 0.0),
+            'weekly_trend': 0.0,
             'volume_trend': volume_trend.get('signal', 0.0),
             'atr_volatility': atr.get('signal', 0.0),
+            'weekday': weekday.get('signal', 0.0),
+            'seasonal': seasonal.get('signal', 0.0),
         }
 
         weekly = seasonal.get('weekly_trend', {})
@@ -859,60 +1033,35 @@ class StockPredictor:
         else:
             recommendation = 'Hold'
 
-        if combined_score > 0:
-            agreeing = sum(1 for s in signals.values() if s > 0)
-            strongly_opposing = sum(1 for s in signals.values() if s < -0.3)
-        elif combined_score < 0:
-            agreeing = sum(1 for s in signals.values() if s < 0)
-            strongly_opposing = sum(1 for s in signals.values() if s > 0.3)
-        else:
-            agreeing = sum(1 for s in signals.values() if abs(s) < 0.1)
-            strongly_opposing = sum(1 for s in signals.values() if abs(s) > 0.3)
+        weighted_agreement = 0.0
+        weighted_opposition = 0.0
+        for key, sig_val in signals.items():
+            w = self.WEIGHTS.get(key, 0)
+            if combined_score > 0:
+                if sig_val > 0:
+                    weighted_agreement += w * min(1.0, abs(sig_val))
+                elif sig_val < -0.2:
+                    weighted_opposition += w * min(1.0, abs(sig_val))
+            elif combined_score < 0:
+                if sig_val < 0:
+                    weighted_agreement += w * min(1.0, abs(sig_val))
+                elif sig_val > 0.2:
+                    weighted_opposition += w * min(1.0, abs(sig_val))
 
-        total_signals = len(signals)
-        agreement_ratio = agreeing / total_signals
-        disagreement_penalty = strongly_opposing * 0.08
-        raw_confidence = abs(combined_score) * agreement_ratio
-        confidence = round(min(95.0, max(15.0, raw_confidence * 100 + 15 - (disagreement_penalty * 100))), 1)
+        signal_values = list(signals.values())
+        signal_variance = float(np.var(signal_values)) if signal_values else 0
+        variance_penalty = min(0.15, signal_variance * 0.3)
+
+        raw_confidence = abs(combined_score) * (0.5 + weighted_agreement) - weighted_opposition * 0.5 - variance_penalty
+        confidence = round(min(95.0, max(15.0, raw_confidence * 100 + 20)), 1)
 
         signal_breakdown = {
-            'historical_pattern': {
-                'name': 'Historical Pattern',
-                'signal': signals['historical_pattern'],
-                'label': self._signal_label(signals['historical_pattern']),
-                'weight': self.WEIGHTS['historical_pattern'],
-                'detail': historical_pattern.get('interpretation', 'N/A')
-            },
             'ml_prediction': {
                 'name': 'ML Prediction',
                 'signal': signals['ml_prediction'],
                 'label': self._signal_label(signals['ml_prediction']),
                 'weight': self.WEIGHTS['ml_prediction'],
                 'detail': ml_result.get('interpretation', 'N/A')
-            },
-            'weekday': {
-                'name': 'Day-of-Week Pattern',
-                'signal': signals['weekday'],
-                'label': self._signal_label(signals['weekday']),
-                'weight': self.WEIGHTS['weekday'],
-                'detail': f"{weekday.get('today_name', 'N/A')}: "
-                          f"{weekday.get('today_pct_positive', 50)}% historically positive"
-            },
-            'seasonal': {
-                'name': 'Seasonal Pattern',
-                'signal': signals['seasonal'],
-                'label': self._signal_label(signals['seasonal']),
-                'weight': self.WEIGHTS['seasonal'],
-                'detail': f"{seasonal.get('current_month_name', 'N/A')}: "
-                          f"avg {seasonal.get('current_month_avg', 0)}% return"
-            },
-            'weekly_trend': {
-                'name': 'Weekly Momentum',
-                'signal': signals['weekly_trend'],
-                'label': self._signal_label(signals['weekly_trend']),
-                'weight': self.WEIGHTS['weekly_trend'],
-                'detail': f"{weekly.get('direction', 'flat').title()} "
-                          f"({weekly.get('streak', 0)} week streak)"
             },
             'rsi': {
                 'name': 'RSI (14)',
@@ -922,6 +1071,13 @@ class StockPredictor:
                 'detail': f"RSI: {technical.get('rsi', {}).get('value', 'N/A')} "
                           f"({technical.get('rsi', {}).get('interpretation', 'N/A')})"
             },
+            'ma_trend': {
+                'name': 'Moving Averages',
+                'signal': signals['ma_trend'],
+                'label': self._signal_label(signals['ma_trend']),
+                'weight': self.WEIGHTS['ma_trend'],
+                'detail': technical.get('ma_trend', {}).get('position', 'N/A')
+            },
             'macd': {
                 'name': 'MACD',
                 'signal': signals['macd'],
@@ -929,12 +1085,12 @@ class StockPredictor:
                 'weight': self.WEIGHTS['macd'],
                 'detail': technical.get('macd', {}).get('interpretation', 'N/A')
             },
-            'ma_trend': {
-                'name': 'Moving Averages',
-                'signal': signals['ma_trend'],
-                'label': self._signal_label(signals['ma_trend']),
-                'weight': self.WEIGHTS['ma_trend'],
-                'detail': technical.get('ma_trend', {}).get('position', 'N/A')
+            'historical_pattern': {
+                'name': 'Historical Pattern',
+                'signal': signals['historical_pattern'],
+                'label': self._signal_label(signals['historical_pattern']),
+                'weight': self.WEIGHTS['historical_pattern'],
+                'detail': historical_pattern.get('interpretation', 'N/A')
             },
             'sentiment': {
                 'name': 'News Sentiment',
@@ -953,6 +1109,28 @@ class StockPredictor:
                 'detail': f"BB: {bollinger.get('interpretation', 'N/A')}, "
                           f"%B: {bollinger.get('pct_b', 'N/A')}"
             },
+            'stochastic': {
+                'name': 'Stochastic',
+                'signal': signals['stochastic'],
+                'label': self._signal_label(signals['stochastic']),
+                'weight': self.WEIGHTS['stochastic'],
+                'detail': stochastic.get('interpretation', 'N/A')
+            },
+            'relative_strength': {
+                'name': 'Relative Strength',
+                'signal': signals['relative_strength'],
+                'label': self._signal_label(signals['relative_strength']),
+                'weight': self.WEIGHTS['relative_strength'],
+                'detail': relative_strength.get('interpretation', 'N/A')
+            },
+            'weekly_trend': {
+                'name': 'Weekly Momentum',
+                'signal': signals['weekly_trend'],
+                'label': self._signal_label(signals['weekly_trend']),
+                'weight': self.WEIGHTS['weekly_trend'],
+                'detail': f"{weekly.get('direction', 'flat').title()} "
+                          f"({weekly.get('streak', 0)} week streak)"
+            },
             'volume_trend': {
                 'name': 'Volume Trend',
                 'signal': signals['volume_trend'],
@@ -966,6 +1144,22 @@ class StockPredictor:
                 'label': self._signal_label(signals['atr_volatility']),
                 'weight': self.WEIGHTS['atr_volatility'],
                 'detail': atr.get('interpretation', 'N/A')
+            },
+            'weekday': {
+                'name': 'Day-of-Week',
+                'signal': signals['weekday'],
+                'label': self._signal_label(signals['weekday']),
+                'weight': self.WEIGHTS['weekday'],
+                'detail': f"{weekday.get('today_name', 'N/A')}: "
+                          f"{weekday.get('today_pct_positive', 50)}% historically positive"
+            },
+            'seasonal': {
+                'name': 'Seasonal',
+                'signal': signals['seasonal'],
+                'label': self._signal_label(signals['seasonal']),
+                'weight': self.WEIGHTS['seasonal'],
+                'detail': f"{seasonal.get('current_month_name', 'N/A')}: "
+                          f"avg {seasonal.get('current_month_avg', 0)}% return"
             },
         }
 
@@ -1022,7 +1216,9 @@ class StockPredictor:
             'sentiment': 'news sentiment',
             'bollinger': 'Bollinger Bands',
             'volume_trend': 'volume trend',
-            'atr_volatility': 'ATR volatility'
+            'atr_volatility': 'ATR volatility',
+            'stochastic': 'Stochastic Oscillator',
+            'relative_strength': 'relative strength vs market'
         }
         strongest_name = name_map.get(strongest_key, strongest_key)
 
@@ -1089,9 +1285,11 @@ class StockPredictor:
         projections = []
 
         periods = [
+            {'name': '1 Day', 'fraction': 1/252},
             {'name': '1 Week', 'fraction': 1/52},
             {'name': '1 Month', 'fraction': 1/12},
             {'name': '1 Year', 'fraction': 1.0},
+            {'name': '3 Years', 'fraction': 3.0},
         ]
 
         for period in periods:
