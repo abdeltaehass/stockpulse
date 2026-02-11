@@ -1,0 +1,23 @@
+services:
+  stockpulse:
+    build: .
+    container_name: stockpulse
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - stockpulse-data:/data
+    env_file:
+      - .env
+    environment:
+      - FLASK_DEBUG=False
+      - FLASK_HOST=0.0.0.0
+      - DATABASE_PATH=/data/stockpulse.db
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  stockpulse-data:

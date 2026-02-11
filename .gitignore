@@ -42,3 +42,7 @@ instance/
 
 # Database
 stockpulse.db
+
+# Docker
+*.log
+.env.production

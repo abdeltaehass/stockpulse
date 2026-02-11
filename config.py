@@ -7,9 +7,11 @@ class Config:
     # Flask settings
     DEBUG = os.getenv('FLASK_DEBUG', 'True') == 'True'
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    HOST = os.getenv('FLASK_HOST', '127.0.0.1')
+    PORT = int(os.getenv('FLASK_PORT', '8080'))
 
     # Database
-    DATABASE_PATH = 'stockpulse.db'
+    DATABASE_PATH = os.environ.get('DATABASE_PATH', 'stockpulse.db')
 
     # Scheduler
     SCHEDULER_API_ENABLED = False

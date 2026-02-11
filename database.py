@@ -1,8 +1,9 @@
+import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
 
-DATABASE_PATH = 'stockpulse.db'
+DATABASE_PATH = os.environ.get('DATABASE_PATH', 'stockpulse.db')
 
 @contextmanager
 def get_db_connection():

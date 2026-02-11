@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: stockpulse
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 app:app
+    envVars:
+      - key: FLASK_DEBUG
+        value: "False"
+      - key: FLASK_HOST
+        value: "0.0.0.0"
+      - key: DATABASE_PATH
+        value: "/opt/render/project/src/stockpulse.db"
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: DISCORD_WEBHOOK_URL
+        sync: false
+      - key: ALPACA_API_KEY
+        sync: false
+      - key: ALPACA_SECRET_KEY
+        sync: false
+      - key: BINANCE_API_KEY
+        sync: false
+      - key: BINANCE_SECRET_KEY
+        sync: false
+      - key: TELEGRAM_TRADING_ENABLED
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true

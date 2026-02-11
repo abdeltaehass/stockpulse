@@ -1,10 +1,12 @@
-yfinance
-pandas
-python-dotenv
-flask
+flask==3.1.0
+gunicorn==23.0.0
+yfinance==0.2.51
+pandas==2.2.3
+numpy==2.2.3
+python-dotenv==1.0.1
 APScheduler==3.10.4
 requests>=2.31.0
 python-telegram-bot>=20.7
 alpaca-py>=0.21.1
 python-binance>=1.0.19
-scikit-learn
+scikit-learn==1.6.1
