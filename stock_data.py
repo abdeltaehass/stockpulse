@@ -1,11 +1,25 @@
 import yfinance as yf
 import pandas as pd
+import time
 from datetime import datetime
+
+_info_cache = {}
+_cache_ttl = 120
 
 class StockData:
     def __init__(self, ticker):
         self.ticker = ticker.upper()
         self.stock = yf.Ticker(self.ticker)
+
+    def _get_info_cached(self):
+        now = time.time()
+        if self.ticker in _info_cache:
+            cached_time, cached_data = _info_cache[self.ticker]
+            if now - cached_time < _cache_ttl:
+                return cached_data
+        data = self.stock.info
+        _info_cache[self.ticker] = (now, data)
+        return data
     
     def get_current_price(self):
         try:
@@ -20,7 +34,7 @@ class StockData:
     
     def get_stock_info(self):
         try:
-            info = self.stock.info
+            info = self._get_info_cached()
             current_price = self.get_current_price()
             
             stock_data = {
@@ -50,7 +64,7 @@ class StockData:
     def get_crypto_info(self):
         """Get crypto-specific info including market cap, volume, and supply"""
         try:
-            info = self.stock.info
+            info = self._get_info_cached()
             current_price = self.get_current_price()
 
             crypto_data = {
@@ -189,7 +203,7 @@ class StockData:
 
     def get_analyst_targets(self):
         try:
-            info = self.stock.info
+            info = self._get_info_cached()
             current = self.get_current_price()
 
             target_low = info.get('targetLowPrice')

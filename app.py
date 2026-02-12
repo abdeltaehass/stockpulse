@@ -56,7 +56,7 @@ def get_stocks():
 
     for i, ticker in enumerate(get_watchlist()):
         if i > 0:
-            time.sleep(0.3)
+            time.sleep(1.0)
         stock = StockData(ticker)
         info = stock.get_stock_info()
         if info:
@@ -83,7 +83,7 @@ def get_top_movers():
         for i, ticker in enumerate(popular_tickers):
             try:
                 if i > 0:
-                    time.sleep(0.3)
+                    time.sleep(1.0)
                 stock = StockData(ticker)
                 info = stock.get_stock_info()
                 if info and info.get('change_percent') is not None:
