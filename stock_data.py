@@ -1,21 +1,24 @@
 import yfinance as yf
 import pandas as pd
 import time
-import requests
 from datetime import datetime
 
 _info_cache = {}
 _cache_ttl = 120
 
-_session = requests.Session()
-_session.headers.update({
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-})
+try:
+    from curl_cffi import requests as cffi_requests
+    _session = cffi_requests.Session(impersonate="chrome")
+except ImportError:
+    _session = None
 
 class StockData:
     def __init__(self, ticker):
         self.ticker = ticker.upper()
-        self.stock = yf.Ticker(self.ticker, session=_session)
+        if _session:
+            self.stock = yf.Ticker(self.ticker, session=_session)
+        else:
+            self.stock = yf.Ticker(self.ticker)
 
     def _get_info_cached(self):
         now = time.time()
