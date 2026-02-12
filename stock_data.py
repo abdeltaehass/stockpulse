@@ -6,19 +6,10 @@ from datetime import datetime
 _info_cache = {}
 _cache_ttl = 120
 
-try:
-    from curl_cffi import requests as cffi_requests
-    _session = cffi_requests.Session(impersonate="chrome")
-except ImportError:
-    _session = None
-
 class StockData:
     def __init__(self, ticker):
         self.ticker = ticker.upper()
-        if _session:
-            self.stock = yf.Ticker(self.ticker, session=_session)
-        else:
-            self.stock = yf.Ticker(self.ticker)
+        self.stock = yf.Ticker(self.ticker)
 
     def _get_info_cached(self):
         now = time.time()
