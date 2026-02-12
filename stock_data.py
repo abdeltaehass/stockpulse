@@ -1,15 +1,21 @@
 import yfinance as yf
 import pandas as pd
 import time
+import requests
 from datetime import datetime
 
 _info_cache = {}
 _cache_ttl = 120
 
+_session = requests.Session()
+_session.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+})
+
 class StockData:
     def __init__(self, ticker):
         self.ticker = ticker.upper()
-        self.stock = yf.Ticker(self.ticker)
+        self.stock = yf.Ticker(self.ticker, session=_session)
 
     def _get_info_cached(self):
         now = time.time()

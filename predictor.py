@@ -581,8 +581,8 @@ class StockPredictor:
                 return {'signal': 0.0, 'rs_ratio': 1.0,
                         'interpretation': 'Insufficient Data'}
 
-            spy = yf.Ticker('SPY')
-            spy_hist = spy.history(period='2y')
+            spy = StockData('SPY')
+            spy_hist = spy.stock.history(period='2y')
 
             if spy_hist is None or len(spy_hist) < 60:
                 return {'signal': 0.0, 'rs_ratio': 1.0,
