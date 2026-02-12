@@ -8,6 +8,7 @@ from notifications import send_email_notification, send_telegram_notification, s
 from config import Config
 from datetime import datetime
 import logging
+import time
 
 app = Flask(__name__)
 
@@ -53,7 +54,9 @@ def index():
 def get_stocks():
     stocks_data = []
 
-    for ticker in get_watchlist():
+    for i, ticker in enumerate(get_watchlist()):
+        if i > 0:
+            time.sleep(0.3)
         stock = StockData(ticker)
         info = stock.get_stock_info()
         if info:
@@ -77,8 +80,10 @@ def get_top_movers():
         ]
 
         stocks_data = []
-        for ticker in popular_tickers:
+        for i, ticker in enumerate(popular_tickers):
             try:
+                if i > 0:
+                    time.sleep(0.3)
                 stock = StockData(ticker)
                 info = stock.get_stock_info()
                 if info and info.get('change_percent') is not None:
