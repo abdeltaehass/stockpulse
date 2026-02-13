@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from functools import wraps
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash
 from stock_data import StockData
 from portfolio import Portfolio
 from predictor import StockPredictor
@@ -17,7 +17,7 @@ app.config['SECRET_KEY'] = Config.SECRET_KEY
 
 # Admin credentials
 ADMIN_EMAIL = 'essencelinked@gmail.com'
-ADMIN_PASSWORD_HASH = generate_password_hash('29292003')
+ADMIN_PASSWORD_HASH = 'scrypt:32768:8:1$Y4THL4s7GzjIRVCC$5da9dd24732200101d4b75504234e08d92f57f30d79c1d0488c8a7b125735ae8eaa79fb3efeddf319edbca846573211dd16ae68ba301aab1c945a4e114d6d82c'
 
 
 def login_required(f):
