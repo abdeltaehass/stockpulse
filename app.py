@@ -1,4 +1,6 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 from stock_data import StockData
 from portfolio import Portfolio
 from predictor import StockPredictor
@@ -11,6 +13,22 @@ import logging
 import time
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = Config.SECRET_KEY
+
+# Admin credentials
+ADMIN_EMAIL = 'essencelinked@gmail.com'
+ADMIN_PASSWORD_HASH = generate_password_hash('29292003')
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('authenticated'):
+            if request.path.startswith('/api/'):
+                return jsonify({'error': 'Authentication required'}), 401
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 logging.basicConfig(level=logging.INFO)
 
@@ -46,11 +64,35 @@ TOP_CRYPTO_TICKERS = [
     'XLM-USD', 'ALGO-USD', 'NEAR-USD', 'FTM-USD', 'AAVE-USD'
 ]
 
+@app.route('/login', methods=['GET'])
+def login_page():
+    if session.get('authenticated'):
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email', '').strip().lower()
+    password = data.get('password', '')
+
+    if email == ADMIN_EMAIL and check_password_hash(ADMIN_PASSWORD_HASH, password):
+        session['authenticated'] = True
+        return jsonify({'success': True})
+    return jsonify({'error': 'Invalid email or password'}), 401
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({'success': True})
+
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
 @app.route('/api/stocks')
+@login_required
 def get_stocks():
     stocks_data = []
 
@@ -69,6 +111,7 @@ def get_stocks():
     })
 
 @app.route('/api/stocks/top-movers')
+@login_required
 def get_top_movers():
     """Get top 10 gainers and losers for the day"""
     try:
@@ -107,6 +150,7 @@ def get_top_movers():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stocks/search')
+@login_required
 def search_stock():
     """Search for a stock by ticker or name"""
     try:
@@ -134,6 +178,7 @@ def search_stock():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stocks/<ticker>/prediction')
+@login_required
 def get_stock_prediction(ticker):
     try:
         predictor = StockPredictor(ticker.upper())
@@ -146,6 +191,7 @@ def get_stock_prediction(ticker):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stocks/<ticker>/history/<period>')
+@login_required
 def get_stock_history(ticker, period):
     valid_periods = ['1d', '1wk', '1mo', '1y']
     if period not in valid_periods:
@@ -215,6 +261,7 @@ def get_stock_history(ticker, period):
     })
 
 @app.route('/api/news')
+@login_required
 def get_news():
     """Get news for all watchlist stocks or a specific ticker"""
     try:
@@ -250,6 +297,7 @@ def get_news():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/portfolio/holdings', methods=['GET'])
+@login_required
 def get_portfolio_holdings():
     """Get all portfolio holdings with P&L"""
     try:
@@ -265,6 +313,7 @@ def get_portfolio_holdings():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/portfolio/holdings', methods=['POST'])
+@login_required
 def add_portfolio_holding():
     """Add a new portfolio holding"""
     try:
@@ -302,6 +351,7 @@ def add_portfolio_holding():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/portfolio/holdings/<int:holding_id>', methods=['PUT'])
+@login_required
 def update_portfolio_holding(holding_id):
     """Update an existing portfolio holding"""
     try:
@@ -335,6 +385,7 @@ def update_portfolio_holding(holding_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/portfolio/holdings/<int:holding_id>', methods=['DELETE'])
+@login_required
 def delete_portfolio_holding(holding_id):
     """Delete a portfolio holding"""
     try:
@@ -344,6 +395,7 @@ def delete_portfolio_holding(holding_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/portfolio/performance', methods=['GET'])
+@login_required
 def get_portfolio_performance():
     """Get portfolio performance metrics"""
     try:
@@ -358,6 +410,7 @@ def get_portfolio_performance():
 # ============ PRICE ALERTS API ============
 
 @app.route('/api/alerts', methods=['POST'])
+@login_required
 def create_alert():
     """Create a new price alert"""
     try:
@@ -422,6 +475,7 @@ def create_alert():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/alerts', methods=['GET'])
+@login_required
 def get_alerts():
     """Get all price alerts"""
     try:
@@ -455,6 +509,7 @@ def get_alerts():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/alerts/<int:alert_id>', methods=['PUT'])
+@login_required
 def update_alert(alert_id):
     """Update an existing price alert"""
     try:
@@ -524,6 +579,7 @@ def update_alert(alert_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/alerts/<int:alert_id>', methods=['DELETE'])
+@login_required
 def delete_alert(alert_id):
     """Delete a price alert"""
     try:
@@ -536,6 +592,7 @@ def delete_alert(alert_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/alerts/history', methods=['GET'])
+@login_required
 def get_alert_history():
     """Get alert trigger history"""
     try:
@@ -563,6 +620,7 @@ def get_alert_history():
 # ============ WATCHLIST API ============
 
 @app.route('/api/watchlist', methods=['GET'])
+@login_required
 def get_watchlist_api():
     """Get all watchlist tickers"""
     try:
@@ -572,6 +630,7 @@ def get_watchlist_api():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/watchlist', methods=['POST'])
+@login_required
 def add_to_watchlist():
     """Add a stock to the watchlist"""
     try:
@@ -602,6 +661,7 @@ def add_to_watchlist():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/watchlist/<ticker>', methods=['DELETE'])
+@login_required
 def remove_from_watchlist(ticker):
     """Remove a stock from the watchlist"""
     try:
@@ -622,6 +682,7 @@ def remove_from_watchlist(ticker):
 # ============ CRYPTO API ============
 
 @app.route('/api/crypto/market')
+@login_required
 def get_crypto_market():
     """Get market data for top cryptocurrencies"""
     try:
@@ -649,6 +710,7 @@ def get_crypto_market():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/crypto/news')
+@login_required
 def get_crypto_news():
     """Get news for top cryptocurrencies"""
     try:
@@ -684,6 +746,7 @@ def get_crypto_news():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/crypto/search')
+@login_required
 def search_crypto():
     """Search for a cryptocurrency by ticker"""
     try:
@@ -715,6 +778,7 @@ def search_crypto():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/notifications/settings', methods=['GET'])
+@login_required
 def get_notification_settings():
     """Get notification preferences"""
     try:
@@ -751,6 +815,7 @@ def get_notification_settings():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/notifications/settings', methods=['PUT'])
+@login_required
 def update_notification_settings():
     """Update notification preferences"""
     try:
@@ -819,6 +884,7 @@ def update_notification_settings():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/notifications/test', methods=['POST'])
+@login_required
 def test_notification():
     """Send a test notification"""
     try:
@@ -863,6 +929,7 @@ def test_notification():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/daily-report/trigger', methods=['POST'])
+@login_required
 def trigger_daily_report():
     """Manually trigger the daily watchlist report"""
     try:
@@ -875,6 +942,7 @@ def trigger_daily_report():
 # ============ STOCK COMPARISON API ============
 
 @app.route('/api/stocks/compare', methods=['POST'])
+@login_required
 def compare_stocks():
     """Compare 2-4 stocks side-by-side with metrics, technicals, predictions, and correlation"""
     try:
@@ -1031,6 +1099,7 @@ def compare_stocks():
 
 
 @app.route('/api/trades', methods=['GET'])
+@login_required
 def get_trade_history():
     try:
         limit = request.args.get('limit', 50, type=int)
