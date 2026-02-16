@@ -44,7 +44,7 @@ class Config:
 
     # Alert settings
     ALERT_CHECK_INTERVAL = int(os.getenv('ALERT_CHECK_INTERVAL', '5'))
-    ALERT_COOLDOWN_HOURS = int(os.getenv('ALERT_COOLDOWN_HOURS', '1'))
+    ALERT_COOLDOWN_HOURS = int(os.getenv('ALERT_COOLDOWN_HOURS', '3'))
 
     # Daily report settings
     DAILY_REPORT_DEFAULT_TIME = os.getenv('DAILY_REPORT_TIME', '08:00')

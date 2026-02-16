@@ -157,14 +157,14 @@ def trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
               datetime.now().isoformat(), email_sent, telegram_sent, discord_sent,
               email_error, telegram_error, discord_error))
 
-        # Deactivate alert
+        # Update triggered_at for cooldown (alert stays active)
         conn.execute('''
             UPDATE price_alerts
-            SET is_active = 0, triggered_at = ?
+            SET triggered_at = ?
             WHERE id = ?
         ''', (datetime.now().isoformat(), alert_id))
 
-    logger.info(f"Alert {alert_id} deactivated and logged to history")
+    logger.info(f"Alert {alert_id} triggered and in cooldown for {Config.ALERT_COOLDOWN_HOURS}h")
 
 
 def reset_percentage_baselines():
