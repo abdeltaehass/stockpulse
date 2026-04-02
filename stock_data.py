@@ -167,7 +167,6 @@ class StockData:
                 pub_date = content.get('pubDate', '')
                 if pub_date:
                     try:
-                        from datetime import datetime
                         dt = datetime.fromisoformat(pub_date.replace('Z', '+00:00'))
                         published = int(dt.timestamp())
                     except:

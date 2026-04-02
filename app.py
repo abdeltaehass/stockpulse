@@ -8,6 +8,7 @@ from notifications import send_email_notification, send_telegram_notification, s
 from config import Config
 from datetime import datetime
 import logging
+import math
 import time
 
 app = Flask(__name__)
@@ -181,8 +182,6 @@ def get_stock_history(ticker, period):
     period_change = ((close_prices[-1] - close_prices[0]) / close_prices[0]) * 100
 
     # Convert NaN values to null for JSON compatibility
-    import math
-
     def nan_to_none(value):
         return None if (isinstance(value, float) and math.isnan(value)) else value
 
@@ -882,8 +881,6 @@ def trigger_daily_report():
 def compare_stocks():
     """Compare 2-4 stocks side-by-side with metrics, technicals, predictions, and correlation"""
     try:
-        import math
-
         data = request.get_json()
         tickers = data.get('tickers', [])
         period = data.get('period', '1mo')
