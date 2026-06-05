@@ -117,6 +117,13 @@ def init_db():
         except:
             pass
 
+        # Edge-trigger state for alerts: 1 while the price is past the
+        # threshold so we only notify once per crossing instead of every cycle
+        try:
+            conn.execute('ALTER TABLE price_alerts ADD COLUMN is_triggered INTEGER DEFAULT 0')
+        except:
+            pass
+
         conn.execute('''
             CREATE TABLE IF NOT EXISTS watchlist (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

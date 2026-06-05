@@ -15,6 +15,7 @@ CRYPTO_MONITORS = ['BTC-USD', 'ETH-USD', 'SOL-USD']
 
 intraday_highs = {}
 last_crash_alert = {}
+in_crash = {}
 last_reset_date = None
 
 
@@ -40,6 +41,7 @@ def check_for_crashes():
         today = date.today()
         if last_reset_date != today:
             intraday_highs.clear()
+            in_crash.clear()
             last_reset_date = today
             logger.info("Intraday highs reset for new trading day")
 
@@ -58,18 +60,36 @@ def check_for_crashes():
 
         now = datetime.now()
 
-        if stock_crashes and _can_alert('stocks', now):
-            logger.warning(f"Stock flash crash detected: {stock_crashes}")
-            _send_crash_notifications(stock_crashes, 'Stock Market', settings)
-            last_crash_alert['stocks'] = now
-
-        if crypto_crashes and _can_alert('crypto', now):
-            logger.warning(f"Crypto flash crash detected: {crypto_crashes}")
-            _send_crash_notifications(crypto_crashes, 'Crypto Market', settings)
-            last_crash_alert['crypto'] = now
+        _evaluate_market('stocks', 'Stock Market', stock_crashes, settings, now)
+        _evaluate_market('crypto', 'Crypto Market', crypto_crashes, settings, now)
 
     except Exception as e:
         logger.error(f"Error in crash detection: {e}")
+
+
+def _evaluate_market(market_type, label, crashes, settings, now):
+    """Send a crash alert only when a market first enters a crashed state.
+
+    Once alerted, we stay silent until prices recover (no crash detected),
+    which re-arms the market. This stops the same downturn from re-alerting
+    every cycle for the rest of the day.
+    """
+    if not crashes:
+        # Recovered (or never crashed): re-arm for the next event
+        in_crash[market_type] = False
+        return
+
+    if in_crash.get(market_type):
+        # Already alerted for this downturn; wait for a recovery first
+        return
+
+    if not _can_alert(market_type, now):
+        return
+
+    logger.warning(f"{label} flash crash detected: {crashes}")
+    _send_crash_notifications(crashes, label, settings)
+    last_crash_alert[market_type] = now
+    in_crash[market_type] = True
 
 
 def _check_ticker(ticker, threshold):

@@ -15,7 +15,8 @@ def check_all_alerts():
         with get_db_connection() as conn:
             cursor = conn.execute('''
                 SELECT id, ticker, alert_type, target_value, baseline_price,
-                       notify_email, notify_telegram, notify_discord, triggered_at
+                       notify_email, notify_telegram, notify_discord,
+                       triggered_at, is_triggered
                 FROM price_alerts
                 WHERE is_active = 1
             ''')
@@ -55,7 +56,13 @@ def check_all_alerts():
 
 
 def check_single_alert(alert, current_price):
-    """Evaluate if a single alert should trigger"""
+    """Evaluate a single alert.
+
+    Edge-triggered: an alert fires once when the price first crosses its
+    threshold, then stays silent until the price moves back to the safe side
+    (re-arming). This prevents the same alert from re-notifying every cycle
+    while the price simply lingers past the threshold.
+    """
     if current_price is None:
         return
 
@@ -77,22 +84,36 @@ def check_single_alert(alert, current_price):
             change_percent = ((current_price - baseline_price) / baseline_price) * 100
             should_trigger = abs(change_percent) >= abs(target_value)
 
-    if should_trigger:
-        # Check cooldown period
-        if alert['triggered_at']:
-            try:
-                last_trigger = datetime.fromisoformat(alert['triggered_at'])
-                cooldown_hours = Config.ALERT_COOLDOWN_HOURS
-                if datetime.now() - last_trigger < timedelta(hours=cooldown_hours):
-                    logger.debug(f"Alert {alert_id} in cooldown period")
-                    return
-            except:
-                pass
+    currently_triggered = bool(alert.get('is_triggered'))
 
-        logger.info(f"Alert {alert_id} triggered: {ticker} at ${current_price}")
-        trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
-                     alert['notify_email'], alert['notify_telegram'], alert['notify_discord'],
-                     baseline_price)
+    if not should_trigger:
+        # Price back on the safe side: re-arm so the next crossing notifies again
+        if currently_triggered:
+            with get_db_connection() as conn:
+                conn.execute('UPDATE price_alerts SET is_triggered = 0 WHERE id = ?', (alert_id,))
+            logger.info(f"Alert {alert_id} re-armed ({ticker} no longer past threshold)")
+        return
+
+    # Condition is met. If we already notified for this crossing, stay silent.
+    if currently_triggered:
+        logger.debug(f"Alert {alert_id} already notified for current crossing, skipping")
+        return
+
+    # Secondary guard against rapid oscillation right at the threshold:
+    # don't re-fire within the cooldown window of the previous notification.
+    if alert['triggered_at']:
+        try:
+            last_trigger = datetime.fromisoformat(alert['triggered_at'])
+            if datetime.now() - last_trigger < timedelta(hours=Config.ALERT_COOLDOWN_HOURS):
+                logger.debug(f"Alert {alert_id} within cooldown window, skipping")
+                return
+        except:
+            pass
+
+    logger.info(f"Alert {alert_id} triggered: {ticker} at ${current_price}")
+    trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
+                 alert['notify_email'], alert['notify_telegram'], alert['notify_discord'],
+                 baseline_price)
 
 
 def trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
@@ -157,14 +178,14 @@ def trigger_alert(alert_id, ticker, alert_type, target_value, current_price,
               datetime.now().isoformat(), email_sent, telegram_sent, discord_sent,
               email_error, telegram_error, discord_error))
 
-        # Update triggered_at for cooldown (alert stays active)
+        # Mark as triggered so we don't re-notify until the price re-arms it.
         conn.execute('''
             UPDATE price_alerts
-            SET triggered_at = ?
+            SET triggered_at = ?, is_triggered = 1
             WHERE id = ?
         ''', (datetime.now().isoformat(), alert_id))
 
-    logger.info(f"Alert {alert_id} triggered and in cooldown for {Config.ALERT_COOLDOWN_HOURS}h")
+    logger.info(f"Alert {alert_id} notified; silent until price re-arms it")
 
 
 def reset_percentage_baselines():

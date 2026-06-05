@@ -485,6 +485,11 @@ def update_alert(alert_id):
                         update_fields.append('baseline_price = ?')
                         values.append(current_price)
 
+        # Changing the threshold or type starts a fresh crossing, so re-arm
+        if 'target_value' in data or 'alert_type' in data:
+            update_fields.append('is_triggered = ?')
+            values.append(0)
+
         if 'target_value' in data:
             update_fields.append('target_value = ?')
             values.append(float(data['target_value']))
