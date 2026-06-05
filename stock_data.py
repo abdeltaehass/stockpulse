@@ -226,6 +226,56 @@ class StockData:
             print(f"Error fetching analyst targets for {self.ticker}: {e}")
             return None
 
+    def get_top_analysts(self, limit=3):
+        """Return the most recent individual analyst price targets.
+
+        Each entry is a distinct firm with its rating and the price target it
+        set, newest first. Used to show 'what the top analysts think'.
+        """
+        try:
+            ud = self.stock.upgrades_downgrades
+            if ud is None or ud.empty:
+                return []
+
+            current = self.get_current_price()
+            ud = ud.sort_index(ascending=False)
+
+            analysts = []
+            seen_firms = set()
+            for grade_date, row in ud.iterrows():
+                firm = row.get('Firm')
+                target = row.get('currentPriceTarget')
+
+                if not firm or firm in seen_firms:
+                    continue
+                if target is None or pd.isna(target):
+                    continue
+                try:
+                    target = float(target)
+                except (TypeError, ValueError):
+                    continue
+                if target <= 0:
+                    continue
+
+                seen_firms.add(firm)
+                entry = {
+                    'firm': str(firm),
+                    'rating': (str(row.get('ToGrade') or '').strip() or 'N/A'),
+                    'target': round(target, 2),
+                    'date': grade_date.strftime('%b %d, %Y') if hasattr(grade_date, 'strftime') else str(grade_date),
+                }
+                if current and current > 0:
+                    entry['upside_pct'] = round((target - current) / current * 100, 1)
+
+                analysts.append(entry)
+                if len(analysts) >= limit:
+                    break
+
+            return analysts
+        except Exception as e:
+            print(f"Error fetching top analysts for {self.ticker}: {e}")
+            return []
+
     def _analyze_sentiment(self, text):
         text_lower = text.lower()
 

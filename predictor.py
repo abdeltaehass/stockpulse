@@ -1314,5 +1314,6 @@ class StockPredictor:
             'target_median': targets['target_median'],
             'num_analysts': targets['num_analysts'],
             'projections': projections,
+            'top_analysts': self.stock.get_top_analysts(3),
             'upside_pct': round((target_mean - current) / current * 100, 1)
         }

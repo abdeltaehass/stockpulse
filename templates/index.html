@@ -1876,6 +1876,58 @@
         .projection-change.up { color: #66bb6a; }
         .projection-change.down { color: #ef5350; }
 
+        .analyst-consensus {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .consensus-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 8px;
+            background: var(--card-bg);
+            border-radius: 8px;
+        }
+
+        .consensus-item.highlight {
+            border: 1px solid var(--accent);
+        }
+
+        .consensus-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--card-secondary);
+        }
+
+        .consensus-val {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--card-text);
+        }
+
+        .analyst-subtitle {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--card-secondary);
+            margin-bottom: 10px;
+        }
+
+        .analyst-firm-block {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .analyst-meta {
+            font-size: 0.78rem;
+            color: var(--card-secondary);
+        }
+
         @media (max-width: 768px) {
             .prediction-recommendation {
                 flex-direction: column;
@@ -4305,17 +4357,42 @@
 
             document.getElementById('predictionSummary').textContent = prediction.summary;
 
-            var targetsHtml = '<div class="analyst-targets-section"><div class="analyst-header"><h4>Price Predictions</h4>';
             var at = prediction.analyst_targets;
-            if (at && at.num_analysts && at.projections) {
-                targetsHtml += '<span class="analyst-count">' + at.num_analysts + ' analysts</span></div><div class="price-projections">';
-                for (var i = 0; i < at.projections.length; i++) {
-                    var p = at.projections[i];
-                    var cls = p.upside_pct >= 0 ? 'up' : 'down';
-                    var sign = p.upside_pct >= 0 ? '+' : '';
-                    targetsHtml += '<div class="projection-row"><span class="projection-period">' + p.period + '</span><div><span class="projection-price">$' + p.mean.toFixed(2) + '</span><span class="projection-change ' + cls + '"> ' + sign + p.upside_pct.toFixed(1) + '%</span></div></div>';
+            var targetsHtml = '<div class="analyst-targets-section"><div class="analyst-header"><h4>Analyst Price Targets</h4>';
+            if (at && at.num_analysts) {
+                targetsHtml += '<span class="analyst-count">' + at.num_analysts + ' analysts</span></div>';
+
+                // Consensus low / average / high target
+                targetsHtml += '<div class="analyst-consensus">' +
+                    '<div class="consensus-item"><span class="consensus-label">Low</span><span class="consensus-val">$' + at.target_low.toFixed(2) + '</span></div>' +
+                    '<div class="consensus-item highlight"><span class="consensus-label">Average</span><span class="consensus-val">$' + at.target_mean.toFixed(2) + '</span></div>' +
+                    '<div class="consensus-item"><span class="consensus-label">High</span><span class="consensus-val">$' + at.target_high.toFixed(2) + '</span></div>' +
+                '</div>';
+
+                // Most recent individual analysts and their targets
+                if (at.top_analysts && at.top_analysts.length) {
+                    targetsHtml += '<div class="analyst-subtitle">Top ' + at.top_analysts.length + ' analysts</div><div class="price-projections">';
+                    for (var i = 0; i < at.top_analysts.length; i++) {
+                        var a = at.top_analysts[i];
+                        var upsideHtml = '';
+                        if (a.upside_pct !== undefined && a.upside_pct !== null) {
+                            var cls = a.upside_pct >= 0 ? 'up' : 'down';
+                            var sign = a.upside_pct >= 0 ? '+' : '';
+                            upsideHtml = '<span class="projection-change ' + cls + '"> ' + sign + a.upside_pct.toFixed(1) + '%</span>';
+                        }
+                        var metaParts = [];
+                        if (a.rating && a.rating !== 'N/A') metaParts.push(a.rating);
+                        if (a.date) metaParts.push(a.date);
+                        targetsHtml += '<div class="projection-row">' +
+                            '<div class="analyst-firm-block">' +
+                                '<span class="projection-period">' + a.firm + '</span>' +
+                                '<span class="analyst-meta">' + metaParts.join(' &bull; ') + '</span>' +
+                            '</div>' +
+                            '<div><span class="projection-price">$' + a.target.toFixed(2) + '</span>' + upsideHtml + '</div>' +
+                        '</div>';
+                    }
+                    targetsHtml += '</div>';
                 }
-                targetsHtml += '</div>';
             } else {
                 targetsHtml += '</div><p style="color: var(--card-secondary); text-align: center; padding: 15px 0;">No analyst price target data available for this ticker.</p>';
             }
